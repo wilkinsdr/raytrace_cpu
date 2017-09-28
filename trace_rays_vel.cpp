@@ -11,19 +11,19 @@
 #include <cmath>
 using namespace std;
 
-#include "common/pointsource.h"
-#include "common/par_file.h"
+#include "common/pointsource_vel.h"
 
-void read_par(const char* filename, char* outfile, double* source, double& V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step);
+void read_par(const char* filename, char* outfile, double* source, double* V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step);
 
 int main( )
 {
 	// parameter configuration file
-	const char par_filename[] = "../par/trace_rays.par";
+	const char par_filename[] = "../par/trace_rays_vel.par";
 	char out_filename[128];
 
 	double source[4];
-	double V, spin;
+	double V[4];
+	double spin;
 
 	double cosalpha0;
 	double cosalphamax;
@@ -37,7 +37,7 @@ int main( )
 
 	int write_step;
 
-	PointSource<double> *RaytraceSource;
+	PointSourceVel<double> *RaytraceSource;
 
 
 	// read in parameters from file
@@ -51,7 +51,7 @@ int main( )
 
 	TextOutput outfile(out_filename);
 
-	RaytraceSource = new PointSource<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax );
+	RaytraceSource = new PointSourceVel<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax );
 	RaytraceSource->RunRaytrace( r_max, theta_max, &outfile, write_step );
 
 	delete RaytraceSource;
@@ -63,7 +63,7 @@ int main( )
 	return 0;
 }
 
-void read_par(const char* filename, char* outfile, double* source, double& V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step)
+void read_par(const char* filename, char* outfile, double* source, double* V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step)
 {
   //
   // read in program parameters from file
@@ -80,7 +80,7 @@ void read_par(const char* filename, char* outfile, double* source, double& V, do
     {
       file_par >> outfile;
       file_par >> source[0] >> source[1] >> source[2] >> source[3];
-      file_par >> V;
+      file_par >> V[0] >> V[1] >> V[2] >> V[3];
       file_par >> a;
       file_par >> dcosalpha >> dbeta;
       file_par >> cosalpha0 >> cosalphamax;

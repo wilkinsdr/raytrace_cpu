@@ -184,7 +184,7 @@ inline void JetPointSource<T>::CalculateConstants_RadialMotion(int ray, T alpha,
 
 	// tetrad basis vector components (they're right-handed!)
 	const T et0 = 1 / sqrt(g00 + g11*V*V);
-	const T et1 = V * et1;
+	const T et1 = V * et0;
 	//
 	const T e12 = 1/sqrt(rhosq);
 	//
@@ -199,7 +199,7 @@ inline void JetPointSource<T>::CalculateConstants_RadialMotion(int ray, T alpha,
 
 	const T tdot = rdotprime[0]*et0 + rdotprime[1]*e20 + rdotprime[3]*e30;
 	const T phidot = rdotprime[1]*e23;
-	// const T rdot = rdotprime[0]*et1 + rdotprime[3]*e31;
+	const T rdot = rdotprime[0]*et1 + rdotprime[3]*e31;
 	const T thetadot = rdotprime[2]*e12;
 
 	// find the corresponding values of k, h and Q using the geodesic equations
@@ -215,13 +215,17 @@ inline void JetPointSource<T>::CalculateConstants_RadialMotion(int ray, T alpha,
 	Raytracer<T>::m_h[ray] = h;
 	Raytracer<T>::m_Q[ray] = Q;
 
-	// apparent velocity of source to a stationary observer at the same location
-	double vel = velocity * sqrt( -g11 / g00 );
-	// use the special relativistic abberation between source and stationary observer at the same location
-	// to work out the sign for rdot
-	// (work out what fraction dr/dt is of dr/dt for photons)
-	Raytracer<T>::m_rdot_sign[ray] = (cos(alpha) > -1*vel) ? 1 : -1;
-	Raytracer<T>::m_thetadot_sign[ray] = (abs(beta) < M_PI/2) ? 1 : -1;
+	Raytracer<T>::m_rdot_sign[ray] = (rdot > 0) ? 1 : -1;
+	Raytracer<T>::m_thetadot_sign[ray] = (thetadot > 0) ? 1 : -1;
+
+//	// apparent velocity of source to a stationary observer at the same location
+//	double vel = velocity * sqrt( -g11 / g00 );
+//	// use the special relativistic abberation between source and stationary observer at the same location
+//	// to work out the sign for rdot
+//	// (work out what fraction dr/dt is of dr/dt for photons)
+//	Raytracer<T>::m_rdot_sign[ray] = (cos(alpha) > -1*vel) ? 1 : -1;
+//	Raytracer<T>::m_thetadot_sign[ray] = (abs(beta) < M_PI/2) ? 1 : -1;
+
 }
 
 template class JetPointSource<double>;

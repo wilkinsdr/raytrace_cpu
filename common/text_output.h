@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <string>
 using namespace std;
 
 class TextOutput
@@ -30,6 +31,29 @@ public:
 	{
 		cout << "Writing results to text file: " << filename << endl;
 		outfile.open(filename, (append) ? ios::app : ios::out);
+
+		if(outfile)
+		{
+			open = true;
+		}
+		else
+		{
+			cerr << "************" << endl;
+			cerr << "TextOutput ERROR: Could not open output file " << filename << endl;
+			cerr << "************" << endl;
+			open = false;
+			return;
+		}
+
+		outfile.setf(format);
+		outfile.precision(precision);
+	}
+
+	TextOutput(string filename, bool append = false, int precision = 8, int colwidth = 20, ios_base::fmtflags format = ios::scientific)
+			: width(colwidth)
+	{
+		cout << "Writing results to text file: " << filename << endl;
+		outfile.open(filename.c_str(), (append) ? ios::app : ios::out);
 
 		if(outfile)
 		{
