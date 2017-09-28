@@ -1,0 +1,54 @@
+# ignore binary and data directories
+bin
+obj
+lib
+dat
+par
+
+# make sure we don't get the binaries in tests and util
+tests/*
+util/*
+!tests/*.*
+!util/*.*
+!tests/**/
+!util/**/
+
+# ignore cmake working files
+*.cmake
+Makefile
+*.cbp
+cmake-build*
+CMakeCache.txt
+CMakeFiles
+
+# we don't want CMakeLocal cloned between machines
+CMakeLocal.txt
+
+# IDE stuff
+.idea
+.project
+.cproject
+.DS_Store
+.wq
+.settings
+
+# dat output files
+*.fits
+*.dat
+*.trf
+*.map
+*.qdp
+*.txt
+*.par
+
+!CMakeLists.txt
+
+# editor temp files
+*~
+*.*swp
+\#*
+._*
+
+# python
+*.pyc
+__pycache__
