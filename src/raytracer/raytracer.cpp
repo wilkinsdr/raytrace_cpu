@@ -108,7 +108,7 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 		m_steps[ray] += n;
 
 		if(outfile != 0)
-			outfile->NewLine(2);
+			outfile->newline(2);
 	}
 }
 

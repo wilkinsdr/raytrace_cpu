@@ -92,9 +92,10 @@ public:
 		outfile.precision(precision);
 	}
 
-	void newline()
+	void newline(int n = 1)
 	{
-		outfile << endl;
+		for(int i=0; i<n; i++)
+			outfile << endl;
 	}
 
 	// insertion operator for manipulators
