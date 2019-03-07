@@ -79,7 +79,7 @@ Raytracer<T>::~Raytracer( )
 }
 
 template <typename T>
-void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step )
+void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin)
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
