@@ -3,3 +3,6 @@ add_subdirectory (raytracer)
 
 add_executable(trace_rays trace_rays.cpp)
 target_link_libraries(trace_rays pointsource raytracer)
+
+add_executable(trace_rays_imageplane trace_rays_imageplane.cpp)
+target_link_libraries(trace_rays_imageplane imageplane raytracer)
