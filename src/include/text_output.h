@@ -14,7 +14,6 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <string>
 using namespace std;
 
 class TextOutput
@@ -83,11 +82,6 @@ public:
 		Close( );
 	}
 
-	bool IsOpen( )
-	{
-		return open;
-	}
-
 	void SetFormat(ios_base::fmtflags format = ios::scientific)
 	{
 		outfile.setf(format);
@@ -98,10 +92,9 @@ public:
 		outfile.precision(precision);
 	}
 
-	void NewLine(int n = 1)
+	void newline()
 	{
-		for(int i=0; i<n; i++)
-			outfile << endl;
+		outfile << endl;
 	}
 
 	// insertion operator for manipulators

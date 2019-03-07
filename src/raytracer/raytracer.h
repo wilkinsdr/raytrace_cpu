@@ -114,7 +114,7 @@ public:
     	p_phi = m_phi;
     	p_redshift = m_redshift;
     }
-    void MapMomentum(  T*& p_pt, T*& p_pr, T*& p_ptheta, T*& p_pphi )
+    void MapMomentum( T*& p_pt, T*& p_pr, T*& p_ptheta, T*& p_pphi )
     {
     	//
     	// Maps the pointers to the momentum variable arrays for access by external code
