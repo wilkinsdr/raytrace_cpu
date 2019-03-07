@@ -113,7 +113,7 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 }
 
 template <typename T>
-inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step )
+inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin )
 {
 	//
 	// propagate the photon along its geodesic until limiting r or theta reached
@@ -213,7 +213,7 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 
 		if(r <= horizon) break;
 
-		if(outfile != 0 && (steps % write_step) == 0)
+		if(outfile != 0 && (steps % write_step) == 0 && (write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )
 		{
 			Cartesian<T>(x,y,z,r,theta,phi,a);
 			(*outfile) << t << x << y << z << endl;
