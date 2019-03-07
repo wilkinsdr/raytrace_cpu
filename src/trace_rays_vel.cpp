@@ -11,7 +11,7 @@
 #include <cmath>
 using namespace std;
 
-#include "common/pointsource_vel.h"
+#include "raytracer/pointsource_vel.h"
 
 void read_par(const char* filename, char* outfile, double* source, double* V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step);
 

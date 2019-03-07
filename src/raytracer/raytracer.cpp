@@ -457,6 +457,32 @@ inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
 	m_Q[ray] = rhosq*rhosq*thetadot*thetadot - (spin*m_k[ray]*cos(m_theta[ray]) + m_h[ray]/tan(m_theta[ray]))*(spin*m_k[ray]*cos(m_theta[ray]) - m_h[ray]/tan(m_theta[ray]));
 }
 
+template <typename T>
+inline void Raytracer<T>::CalculateConstantsFromP(int ray, T pt, T pr, T ptheta, T pphi)
+{
+	//
+	// calculate constants of motion from the 4-momentum and location of a photon
+	//
+	const T a = spin;
+	const T r = m_r[ray];
+	const T theta = m_theta[ray];
+
+	const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+
+	T k = (1 - 2*r/rhosq)*pr + (2*a*r*sin(theta)*sin(theta)/rhosq)*pphi;
+
+	T h = pphi * ( (r*r + a*a)*(r*r + a*a*cos(theta)*cos(theta) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
+	h = h - 2*a*r*k*sin(theta)*sin(theta);
+	h = h / ( r*r + a*a*cos(theta)*cos(theta) - 2*r );
+
+	T Q = rhosq*rhosq*ptheta*ptheta - (a*k*cos(theta) + h/tan(theta))*(a*k*cos(theta) - h/tan(theta));
+	
+	m_k[ray] = k;
+	m_h[ray] = h;
+	m_Q[ray] = Q;
+}
+
+
 template<typename T>
 void Raytracer<T>::CalculateMomentum( )
 {

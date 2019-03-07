@@ -11,7 +11,7 @@
 #include <cmath>
 using namespace std;
 
-#include "common/pointsource_vel.h"
+#include "raytracer/pointsource_vel.h"
 #include "common/par_file.h"
 
 int main(int argc, char** argv)

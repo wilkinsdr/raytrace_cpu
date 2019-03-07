@@ -1,5 +1,5 @@
-include_directories("common")
-add_subdirectory (common)
+include_directories("raytracer")
+add_subdirectory (raytracer)
 
 add_executable(trace_rays trace_rays.cpp)
 target_link_libraries(trace_rays pointsource raytracer)

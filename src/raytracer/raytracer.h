@@ -32,8 +32,8 @@
 #include <cmath>
 using namespace std;
 
-#include "kerr.h"
-#include "text_output.h"
+#include "../common/kerr.h"
+#include "../common/text_output.h"
 
 
 template <typename T>
@@ -56,6 +56,7 @@ protected:	// these members need to be accessible by derived classes to set up d
 	int *m_rdot_sign, *m_thetadot_sign;
 
 	inline void CalculateConstants(int ray, T alpha, T beta, T V, T E);
+	inline void CalculateConstantsFromP(int ray, T pt, T pr, T ptheta, T pphi);
 
 public:
     Raytracer( int num_rays, float spin, float tol = TOL);

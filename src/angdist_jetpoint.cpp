@@ -11,7 +11,7 @@
 #include <cmath>
 using namespace std;
 
-#include "common/jetpointsource.h"
+#include "raytracer/jetpointsource.h"
 
 void read_par(const char* filename, char* outfile, double* source, double& V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& dthetabin, int& axis, int& axis2);
 
