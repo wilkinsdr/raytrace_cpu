@@ -149,7 +149,7 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 
 	// integrate geodesic equations until limit reached
 	// if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
-	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) )  &&  steps < steplim )
+	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
 	//while( r < rlim  && theta < thetalim  &&  steps < steplim )
 	{
 		++steps;
