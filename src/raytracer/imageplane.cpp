@@ -19,7 +19,7 @@ ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy
 	m_plane_x = new T[Raytracer<T>::nRays];
 	m_plane_y = new T[Raytracer<T>::nRays];
 
-	cout << "Setting up image plane with (" << Nx << ',' << Ny << ") rays" << endl;
+	cout << "Setting up image plane with (" << Nx << 'x' << Ny << ") rays" << endl;
 	InitImagePlane( D, incl*M_PI/180, phi0, x0, xmax, dx, y0, ymax, dy);
 }
 
