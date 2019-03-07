@@ -32,8 +32,8 @@
 #include <cmath>
 using namespace std;
 
-#include "../common/kerr.h"
-#include "../common/text_output.h"
+#include "../include/kerr.h"
+#include "../include/text_output.h"
 
 
 template <typename T>
