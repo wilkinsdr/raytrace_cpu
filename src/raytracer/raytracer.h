@@ -62,8 +62,8 @@ public:
     Raytracer( int num_rays, float spin, float tol = TOL);
     ~Raytracer( );
 
-    void RunRaytrace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1 );
-    inline int Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1);
+    void RunRaytrace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
+    inline int Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
     void RedshiftStart( T V, bool reverse = false, bool projradius = false );
     void Redshift( T V, bool reverse = false, bool projradius = false );

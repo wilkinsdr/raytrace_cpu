@@ -79,7 +79,7 @@ Raytracer<T>::~Raytracer( )
 }
 
 template <typename T>
-void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin)
+void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -104,7 +104,7 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 		else if(m_steps[ray] >= STEPLIM) return;
 
 		int n;
-		n = Propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step);
+		n = Propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
 		m_steps[ray] += n;
 
 		if(outfile != 0)
@@ -113,7 +113,7 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 }
 
 template <typename T>
-inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin )
+inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
 {
 	//
 	// propagate the photon along its geodesic until limiting r or theta reached
@@ -146,6 +146,8 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 	const T k = m_k[ray];
 	const T h = m_h[ray];
 	const T Q = m_Q[ray];
+
+	bool write_started = false;
 
 	// integrate geodesic equations until limit reached
 	// if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
@@ -213,12 +215,26 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 
 		if(r <= horizon) break;
 
-		if(outfile != 0 && (steps % write_step) == 0 && (write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )
+		if(outfile != 0 && (steps % write_step) == 0 )
 		{
-			Cartesian<T>(x,y,z,r,theta,phi,a);
-			(*outfile) << t << x << y << z << endl;
+			if((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )
+			{
+				write_started = true;
+				if(write_cartesian)
+				{
+					Cartesian<T>(x, y, z, r, theta, phi, a);
+					(*outfile) << t << x << y << z << endl;
+				}
+				else
+				{
+					(*outfile) << t << r << theta << phi << endl;
+				}
+			}
+			else if(write_started)
+			{
+				break;
+			}
 		}
-
 	}
 
 	m_t[ray] = t;

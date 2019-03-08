@@ -41,8 +41,9 @@ int main(int argc, char** argv)
 	int Ny = par_file.get_parameter<int>("Ny");
 	double tol = par_file.get_parameter<double>("tol", TOL);
 	double write_step = par_file.get_parameter<double>("write_step", 10);
-	double write_rmin = par_file.get_parameter<double>("write_step", -1);
-	double write_rmax = par_file.get_parameter<double>("write_step", -1);
+	double write_rmin = par_file.get_parameter<double>("write_rmin", -1);
+	double write_rmax = par_file.get_parameter<double>("write_rmax", -1);
+	bool write_cartesian = par_file.get_parameter<double>("write_cartesian", true);
 	double theta_max = par_file.get_parameter<double>("thetamax", 0);
 
 	double dx = (xmax - x0) / (Nx - 1);
@@ -57,7 +58,7 @@ int main(int argc, char** argv)
 
 	RaytraceSource = new ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, tol, plane_phi0);
 
-	RaytraceSource->RunRaytrace( 1.5*dist, theta_max, &outfile, write_step, write_rmax, write_rmin );
+	RaytraceSource->RunRaytrace( 1.5*dist, theta_max, &outfile, write_step, write_rmax, write_rmin, write_cartesian );
 
 	delete RaytraceSource;
 
@@ -67,4 +68,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
