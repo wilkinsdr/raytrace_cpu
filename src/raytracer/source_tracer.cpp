@@ -8,74 +8,28 @@
 #include "raytracer.h"
 
 template <typename T>
-Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
-	: nRays( num_rays )
-	,  spin(spin_par)
-	, tolerance(toler)
+Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, T en0, T enmax, int Nen, bool logbin_en )
+	: Raytracer(num_rays, spin_par, toler)
 {
-	//
-	// Constructor function - allocates host and device memory for each ray to store ray position, momentum,
-	// integration steps taken, redshift and constants of motion. Allocates only revice memory for the sign
-	// of rdot and thetadot as well as the emitted energy used for redshift calculations.
-	//
-	// Rays are set up on a 2D grid of GPU threads (for easy variation of 2 parameters between rays)
-	//
-	// Arguments:
-	//	num_rays	int		Number of rays required
-	//	spin_par	T		Dimensionless spin parameter of black hole
-	//	toler		T		Tolerance used to set step size in numerical integration of geodesics
-	//
+	emis = new T*[num_rays];
+	absorb = new T*[num_rays];
 
-	// calculate horizon and store in GPU shared memory
-	horizon = KerrHorizon<T>(spin);
-	cout << "Event horizon at " << horizon << endl;
-
-	cout << "Allocating memory (" << 9*nRays*sizeof(T) + nRays*sizeof(int) << " B)" << endl;
-	m_t = new T[nRays];
-	m_r = new T[nRays];
-	m_theta = new T[nRays];
-	m_phi = new T[nRays];
-	m_pt = new T[nRays];
-	m_pr = new T[nRays];
-	m_ptheta = new T[nRays];
-	m_pphi = new T[nRays];
-	m_steps = new int[nRays];
-	m_emit = new T[nRays];
-	m_redshift = new T[nRays];
-    m_k = new T[nRays];
-    m_h = new T[nRays];
-    m_Q = new T[nRays];
-    m_rdot_sign = new int[nRays];
-    m_thetadot_sign = new int[nRays];
-
-    for(int ray=0; ray<nRays; ray++)
-    	m_steps[ray] = -1;
+	for(int i=0; i<num_rays; i++)
+	{
+		emis[i] = new T[Nen];
+		absorb[i] = new T[Nen];
+		for(int j=0; j<Nen; j++)
+		{
+			emis[i][j] = 0;
+			absorb[i][j] = 0;
+		}
+	}
 }
 
 template <typename T>
 Raytracer<T>::~Raytracer( )
 {
-	//
-	// Destructor - frees host and device memory used for ray tracing variables
-	//
-	cout << "Cleaning up raytracer" << endl;
 
-	delete[] m_t;
-	delete[] m_r;
-	delete[] m_theta;
-	delete[] m_phi;
-	delete[] m_pt;
-	delete[] m_pr;
-	delete[] m_ptheta;
-	delete[] m_pphi;
-	delete[] m_steps;
-	delete[] m_emit;
-	delete[] m_redshift;
-	delete[] m_k;
-	delete[] m_h;
-	delete[] m_Q;
-	delete[] m_rdot_sign;
-	delete[] m_thetadot_sign;
 }
 
 template <typename T>
@@ -123,8 +77,10 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 	int rsign_count = COUNT_MIN;
 	int thetasign_count = COUNT_MIN;
 
-	T rhosq, delta;
+	T rhosq, delta, sigmasq, e2nu, e2psi, omega, grr, gthth, gphph;
 	T rdotsq, thetadotsq;
+	T energy;
+	T len;
 
 	T step;
 
@@ -158,6 +114,10 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 
 		rhosq = r*r + (a*cos(theta))*(a*cos(theta));
 		delta = r*r - 2*r + a*a;
+		sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+		e2nu = rhosq * delta / sigmasq;
+		e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
+		omega = 2*spin*r / sigmasq;
 
 		// tdot
 		pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
@@ -206,10 +166,28 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 		if( step < MIN_STEP ) step = MIN_STEP;
 
 		// calculate new position
-		t += pt*step;
-		r += pr*step;
-		theta += ptheta*step;
-		phi += pphi*step;
+		T dt += pt*step;
+		T dr += pr*step;
+		T dtheta += ptheta*step;
+		T dphi += pphi*step;
+		
+		t += dt;
+		r += dr;
+		theta += dtheta;
+		phi += dphi;
+
+		grr = -rhosq/delta;
+		gthth = -rhosq;
+		gphph = -e2psi;
+		
+		len = grr*dr*dr + gthth*dtheta*dtheta + gphph*dphi*dphi;
+		dens = 1;
+
+		energy = 1./ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, m_emit[ray]);
+		int ien = (logbin_en) ? static_cast<int>( log(energy/en0) / log(den) ) : static_cast<int>((energy - en0)/den);
+
+		emis[m_ray][ien] += len * dens * pow(energy, 3);
+		absorb[m_ray][ien] += len * dens;
 
 		//aff += step;
 
@@ -404,60 +382,6 @@ void Raytracer<T>::Redshift( T V, bool reverse, bool projradius )
 	}
 }
 
-
-template <typename T>
-T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit )
-{
-	// calculate the redshift of a single ray
-
-	T p[4];
-
-	// metric coefficients
-	const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
-	const T delta = r*r - 2*r + spin*spin;
-	const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
-
-	const T e2nu = rhosq * delta / sigmasq;
-	const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
-	const T omega = 2*spin*r / sigmasq;
-
-	T g[16];
-	for(int i=0; i<16; i++)
-		g[i] = 0;
-
-	// g[i][j] -> g[i*4 + j]
-	g[0*4 + 0] = e2nu - omega*omega*e2psi;
-	g[0*4 + 3] = omega*e2psi;
-	g[3*4 + 0] = g[0*4 + 3];
-	g[1*4 + 1] = -rhosq/delta;
-	g[2*4 + 2] = -rhosq;
-	g[3*4 + 3] = -e2psi;
-
-	// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
-	if(V == -1 && projradius)
-		V = 1 / (spin + r*sin(theta)*sqrt(r*sin(theta)));	// project the radius parallel to the equatorial plane
-	else if(V == -1)
-		V = 1 / (spin + r*sqrt(r));
-
-	// timelike basis vector
-	const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
-			, 0 , 0 ,
-			         (1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
-
-	// photon momentum
-	MomentumFromConsts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);
-
-	// if we're propagating backwards, reverse the direction of the photon momentum
-	if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
-
-	// evaluate dot product to get energy
-	T recv = 0;
-	for(int i=0; i<4; i++)
-		for(int j=0; j<4; j++)
-			recv += g[i*4 + j] * et[i] * p[j];
-
-	return (reverse) ? recv / emit : emit / recv;
-}
 
 
 template <typename T>

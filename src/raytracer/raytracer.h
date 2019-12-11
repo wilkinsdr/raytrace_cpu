@@ -67,6 +67,7 @@ public:
 
     void RedshiftStart( T V, bool reverse = false, bool projradius = false );
     void Redshift( T V, bool reverse = false, bool projradius = false );
+	T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit );
 
     void RangePhi( T min = -1*M_PI, T max = M_PI );
 
