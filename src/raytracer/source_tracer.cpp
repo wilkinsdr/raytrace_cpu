@@ -198,7 +198,7 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 
 			if(ien >= 0 && ien < Nen)
 			{
-				emis[ray][ien] += (1./(r*r)) * len * dens; // * pow(energy, 3);
+				emis[ray][ien] += (1./(r*r)) * len * dens * pow(energy, 3);
 				absorb[ray][ien] += len * dens;
 			}
 		}
