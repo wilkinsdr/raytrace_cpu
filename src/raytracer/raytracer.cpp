@@ -327,7 +327,7 @@ void Raytracer<T>::RedshiftStart( T V, bool reverse, bool projradius )
 
 
 template <typename T>
-void Raytracer<T>::Redshift( T V, bool reverse, bool projradius )
+void Raytracer<T>::Redshift( T V, bool reverse, bool projradius, int motion )
 {
 	//
 	// Calculates the redshift of the ray (emitted / received energy).
@@ -351,62 +351,13 @@ void Raytracer<T>::Redshift( T V, bool reverse, bool projradius )
 
 	for(int ray=0; ray<nRays; ray++)
 	{
-		T p[4];
-
-		// metric coefficients
-		const T rhosq = m_r[ray]*m_r[ray] + (spin*cos(m_theta[ray]))*(spin*cos(m_theta[ray]));
-		const T delta = m_r[ray]*m_r[ray] - 2*m_r[ray] + spin*spin;
-		const T sigmasq = (m_r[ray]*m_r[ray] + spin*spin)*(m_r[ray]*m_r[ray] + spin*spin) - spin*spin*delta*sin(m_theta[ray])*sin(m_theta[ray]);
-
-		const T e2nu = rhosq * delta / sigmasq;
-		const T e2psi = sigmasq * sin(m_theta[ray])*sin(m_theta[ray]) / rhosq;
-		const T omega = 2*spin*m_r[ray] / sigmasq;
-
-		T g[16];
-		for(int i=0; i<16; i++)
-			g[i] = 0;
-
-		// g[i][j] -> g[i*4 + j]
-		g[0*4 + 0] = e2nu - omega*omega*e2psi;
-		g[0*4 + 3] = omega*e2psi;
-		g[3*4 + 0] = g[0*4 + 3];
-		g[1*4 + 1] = -rhosq/delta;
-		g[2*4 + 2] = -rhosq;
-		g[3*4 + 3] = -e2psi;
-
-		// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
-		if(V == -1 && projradius)
-			V = 1 / (spin + m_r[ray]*sin(m_theta[ray])*sqrt(m_r[ray]*sin(m_theta[ray])));	// project the radius parallel to the equatorial plane
-		else if(V == -1)
-			V = 1 / (spin + m_r[ray]*sqrt(m_r[ray]));
-
-		// timelike basis vector
-		const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
-							, 0 , 0 ,
-							(1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
-
-		// photon momentum
-		MomentumFromConsts<T>(p[0], p[1], p[2], p[3], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray], m_thetadot_sign[ray], m_r[ray], m_theta[ray], m_phi[ray], spin);
-
-		// if we're propagating backwards, reverse the direction of the photon momentum
-		if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
-
-		// evaluate dot product to get energy
-		T recv = 0;
-		for(int i=0; i<4; i++)
-			for(int j=0; j<4; j++)
-				recv += g[i*4 + j] * et[i] * p[j];
-
-		if(reverse)
-			m_redshift[ray] = recv / m_emit[ray];
-		else
-			m_redshift[ray] = m_emit[ray] / recv;
+		m_redshift[ray] = ray_redshift(V, reverse, projradius, m_r[ray], m_theta[ray], m_phi[ray], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray], m_thetadot_sign[ray], m_emit[ray], motion);
 	}
 }
 
 
 template <typename T>
-T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit )
+inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion )
 {
 	// calculate the redshift of a single ray
 
@@ -433,16 +384,29 @@ T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, 
 	g[2*4 + 2] = -rhosq;
 	g[3*4 + 3] = -e2psi;
 
-	// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
-	if(V == -1 && projradius)
-		V = 1 / (spin + r*sin(theta)*sqrt(r*sin(theta)));	// project the radius parallel to the equatorial plane
-	else if(V == -1)
-		V = 1 / (spin + r*sqrt(r));
+	T et[] = {0, 0, 0, 0};
 
-	// timelike basis vector
-	const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
-			, 0 , 0 ,
-			         (1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
+	if(motion == 0)
+	{
+		// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
+		if (V == -1 && projradius)
+			V = 1 / (spin +
+			         r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
+		else if (V == -1)
+			V = 1 / (spin + r * sqrt(r));
+
+		// timelike basis vector
+		et[0] = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+		et[3] = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+	}
+	else if(motion == 1)
+	{
+		// if v < 0, use the speed relative to the local speed of light
+		if(V < 0) V = abs(V) * (r*r - 2*r + spin+spin) / (r*r + spin*spin);
+
+		et[0] = 1. / sqrt(g[0*4+0] + g[1*4+1]*V*V);
+		et[1] = V * et[0];
+	}
 
 	// photon momentum
 	MomentumFromConsts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);

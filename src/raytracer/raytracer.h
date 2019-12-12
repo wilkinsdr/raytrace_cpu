@@ -39,13 +39,11 @@ using namespace std;
 template <typename T>
 class Raytracer
 {
-private:
-	float tolerance;
-	float horizon;
-
 protected:	// these members need to be accessible by derived classes to set up different X-ray sources
 	int nRays;
 	T spin;
+	float tolerance;
+	float horizon;
 
 	// pointers for ray variables
 	T *m_t, *m_r, *m_theta, *m_phi;
@@ -66,8 +64,8 @@ public:
     inline int Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
     void RedshiftStart( T V, bool reverse = false, bool projradius = false );
-    void Redshift( T V, bool reverse = false, bool projradius = false );
-	T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit );
+    void Redshift( T V, bool reverse = false, bool projradius = false, int motion = 0 );
+	inline T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion = 0 );
 
     void RangePhi( T min = -1*M_PI, T max = M_PI );
 

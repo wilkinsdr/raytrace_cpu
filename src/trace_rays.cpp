@@ -12,7 +12,7 @@
 using namespace std;
 
 #include "raytracer/pointsource.h"
-#include "common/par_file.h"
+#include "include/par_file.h"
 
 void read_par(const char* filename, char* outfile, double* source, double& V, double& a, double& dcosalpha, double& dbeta, double& cosalpha0, double& cosalphamax, double& beta0, double& betamax, double& r_max, double& theta_max, int& write_step);
 
@@ -51,7 +51,7 @@ int main( )
 
 	TextOutput outfile(out_filename);
 
-	RaytraceSource = new PointSource<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax );
+	RaytraceSource = new PointSource<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax );
 	RaytraceSource->RunRaytrace( r_max, theta_max, &outfile, write_step );
 
 	delete RaytraceSource;

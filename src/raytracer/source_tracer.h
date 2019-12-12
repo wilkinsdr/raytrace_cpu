@@ -12,20 +12,8 @@
  *  This class is a template to set the floating point precision (e.g. float or double)
  */
 
-#ifndef RAYTRACER_H_
-#define RAYTRACER_H_
-
-// set a default tolerance (precision used for variable integration step sizes)
-#define TOL 100
-// set a default outer radius for ray propagation
-#define RLIM 1000
-
-// total number of steps allowed per ray before it's aborted
-#define STEPLIM 10000000
-// smallest integration step  to prevent infinite loops of infinitesimal steps
-#define MIN_STEP 1E-12
-// minimum number of integration steps needed for a ray to be included in analysis
-#define COUNT_MIN 100
+#ifndef SOURCETRACER_H_
+#define SOURCETRACER_H_
 
 #include <iostream>
 #include <iomanip>
@@ -38,22 +26,35 @@ using namespace std;
 
 
 template <typename T>
-class SourceTracer : public RayTracer
+class SourceTracer : public Raytracer<T>
 {
 private:
-	float tolerance;
-	float horizon;
+	T source_size_xy, source_size_z, source_vel;
+	int source_motion;
 
-protected:	// these members need to be accessible by derived classes to set up different X-ray sources
-	T **emis, **absorb;
+	bool reverse;
 
 public:
-    SourceTracer( int num_rays, float spin, float tol = TOL);
+    SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, float toler = TOL, bool reverse = false );
     ~SourceTracer( );
+
+	T *energy;
+	T en0, enmax, den;
+	int Nen;
+	bool logbin_en;
+
+	T **emis, **absorb;
 
     void run_source_trace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
     inline int propagate_source(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
+	void set_source(T size_xy, T size_z, T vel, int motion = 1)
+	{
+		source_size_xy = size_xy;
+		source_size_z = size_z;
+		source_motion = motion;
+		source_vel = vel;
+	}
 };
 
-#endif /* RAYTRACER_H_ */
+#endif /* SOURCETRACER_H_ */
