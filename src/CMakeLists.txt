@@ -9,3 +9,5 @@ target_link_libraries(trace_rays_imageplane imageplane raytracer)
 
 add_executable(outflow outflow.cpp)
 target_link_libraries(outflow sourcetracer_imageplane sourcetracer raytracer)
+
+add_executable(pcyg pcyg.cpp)
