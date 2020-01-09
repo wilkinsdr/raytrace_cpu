@@ -205,6 +205,8 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 
 		if(r <= Raytracer<T>::horizon) break;
 
+		if(stopping_fn_set) if((*stopping_fn)(t, r, theta, phi, stopping_args)) break;
+
 		if(outfile != 0 && (steps % write_step) == 0 )
 		{
 			if((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )

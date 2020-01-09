@@ -34,6 +34,10 @@ private:
 
 	bool reverse;
 
+	bool stopping_fn_set;
+	bool (*stopping_fn)(T, T, T, T, T*);
+	T *stopping_args;
+
 public:
     SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, float toler = TOL, bool reverse = false );
     ~SourceTracer( );
