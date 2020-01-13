@@ -5,11 +5,11 @@
  *      Author: drw
  */
 
-#include "source_tracer.h"
+#include "mapper.h"
 
 template <typename T>
-Mapper<T>::Mapper( int num_rays, float spin_par, T init_r0, T init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, float toler, bool init_reverse )
-	: Raytracer<T>(num_rays, spin_par, toler), r0(init_r0), rmax(init_rmax), Nr(init_Nr), Ntheta(init_Ntheta), Nphi(init_Nphi), logbin_r(init_logbin_r), reverse(init_reverse)
+Mapper<T>::Mapper( int num_rays, float spin_par, T init_r0, T init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, T init_thetamax, float toler, bool init_reverse )
+	: Raytracer<T>(num_rays, spin_par, toler), r0(init_r0), rmax(init_rmax), Nr(init_Nr), Ntheta(init_Ntheta), Nphi(init_Nphi), logbin_r(init_logbin_r), theta_max(init_thetamax), reverse(init_reverse)
 {
 	dr = (logbin_r) ? exp(log(rmax/r0)/(Nr-1)) : (rmax - r0)/(Nr - 1);
 	dtheta = (M_PI_2)/(Ntheta - 1);
@@ -18,6 +18,37 @@ Mapper<T>::Mapper( int num_rays, float spin_par, T init_r0, T init_rmax, int ini
 	map_time = new Array3D<T>(Nr, Ntheta, Nphi);
 	map_redshift = new Array3D<T>(Nr, Ntheta, Nphi);
 	map_Nrays = new Array3D<int>(Nr, Ntheta, Nphi);
+
+	map_time->zero();
+	map_redshift->zero();
+	map_Nrays->zero();
+}
+
+template <typename T>
+Mapper<T>::Mapper(char* load_filename) : Raytracer<T>(1, 0)
+{
+	ifstream infile(load_filename, ios::binary);
+	infile.read(reinterpret_cast<char *> (&r0), sizeof(T));
+	infile.read(reinterpret_cast<char *> (&rmax), sizeof(T));
+	infile.read(reinterpret_cast<char *> (&Nr), sizeof(int));
+	infile.read(reinterpret_cast<char *> (&logbin_r), sizeof(bool));
+	infile.read(reinterpret_cast<char *> (&theta_max), sizeof(T));
+	infile.read(reinterpret_cast<char *> (&Ntheta), sizeof(int));
+	infile.read(reinterpret_cast<char *> (&Nphi), sizeof(int));
+
+	dr = (logbin_r) ? exp(log(rmax/r0)/(Nr-1)) : (rmax - r0)/(Nr - 1);
+	dtheta = (M_PI_2)/(Ntheta - 1);
+	dphi = (2*M_PI)/(Nphi - 1);
+
+	map_time = new Array3D<T>(Nr, Ntheta, Nphi);
+	map_redshift = new Array3D<T>(Nr, Ntheta, Nphi);
+	map_Nrays = new Array3D<int>(Nr, Ntheta, Nphi);
+
+	map_time->read(&infile);
+	map_redshift->read(&infile);
+	map_Nrays->read(&infile);
+
+	infile.close();
 }
 
 template <typename T>
@@ -27,7 +58,7 @@ Mapper<T>::~Mapper( )
 }
 
 template <typename T>
-void Mapper<T>::run_map( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
+void Mapper<T>::run_map( T r_max )
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -53,16 +84,15 @@ void Mapper<T>::run_map( T r_max, T theta_max, TextOutput* outfile, int write_st
 		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) return;
 
 		int n;
-		n = propagate_source(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+		n = map_ray(ray, r_max, theta_max, STEPLIM);
 		Raytracer<T>::m_steps[ray] += n;
-
-		if(outfile != 0)
-			outfile->newline(2);
 	}
+
+	average_rays();
 }
 
 template <typename T>
-inline int Mapper<T>::map_ray(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
+inline int Mapper<T>::map_ray(int ray, const T rlim, const T thetalim, const int steplim)
 {
 	//
 	// propagate the photon along its geodesic until limiting r or theta reached
@@ -194,11 +224,12 @@ inline int Mapper<T>::map_ray(int ray, const T rlim, const T thetalim, const int
 				else if (vel_mode == 2) V = vel * sqrt(r / rmax);
 			}
 			else
-				V = 1 / (spin + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
+				V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 
 			redshift = Raytracer<T>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<T>::m_emit[ray], motion);
-			map_time[ir][itheta][iphi] += t;
-			map_redshift[ir][itheta][iphi] += redshift;
+			(*map_time)[ir][itheta][iphi] += t;
+			(*map_redshift)[ir][itheta][iphi] += redshift;
+			++(*map_Nrays)[ir][itheta][iphi];
 		}
 
 	}
@@ -215,6 +246,31 @@ inline int Mapper<T>::map_ray(int ray, const T rlim, const T thetalim, const int
 	Raytracer<T>::m_thetadot_sign[ray] = thetadot_sign;
 
 	return steps;
+}
+
+template <typename T>
+void Mapper<T>::save(char* filename)
+{
+	ofstream outfile(filename, ios::binary);
+	outfile.write(reinterpret_cast<char *> (&r0), sizeof(T));
+	outfile.write(reinterpret_cast<char *> (&rmax), sizeof(T));
+	outfile.write(reinterpret_cast<char *> (&Nr), sizeof(int));
+	outfile.write(reinterpret_cast<char *> (&logbin_r), sizeof(bool));
+	outfile.write(reinterpret_cast<char *> (&theta_max), sizeof(T));
+	outfile.write(reinterpret_cast<char *> (&Ntheta), sizeof(int));
+	outfile.write(reinterpret_cast<char *> (&Nphi), sizeof(int));
+
+	map_time->write(&outfile);
+	map_redshift->write(&outfile);
+	map_Nrays->write(&outfile);
+	outfile.close();
+}
+
+template <typename T>
+void Mapper<T>::average_rays()
+{
+	(*map_time) /= (*map_Nrays);
+	(*map_redshift) /= (*map_Nrays);
 }
 
 template class Mapper<double>;

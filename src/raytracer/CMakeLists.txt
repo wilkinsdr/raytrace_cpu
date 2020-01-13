@@ -4,3 +4,6 @@ add_library(imageplane imageplane.cpp)
 
 add_library(sourcetracer source_tracer.cpp)
 add_library(sourcetracer_imageplane sourcetracer_imageplane.cpp)
+
+add_library(mapper mapper.cpp)
+add_library(mapper_pointsource mapper_pointsource.cpp)

@@ -21,7 +21,6 @@
 using namespace std;
 
 #include "../include/kerr.h"
-#include "../include/text_output.h"
 #include "../include/array.h"
 #include "raytracer.h"
 
@@ -39,17 +38,23 @@ private:
 
 
 public:
-    Mapper( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, float toler = TOL, bool reverse = false );
+    Mapper(int num_rays, float spin_par, T init_r0, T init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, T init_thetamax = M_PI_2, float toler = TOL, bool reverse = false);
+    Mapper(char* load_filename);
     ~Mapper( );
 
-	T r0, rmax;
+	T r0, rmax, theta_max;
 	int Nr, Ntheta, Nphi;
+	T dr, dtheta, dphi;
+	bool logbin_r;
 
-	Array3D<T> *map_t, *map_redshift, *map_flux;
+	Array3D<T> *map_time, *map_redshift, *map_flux;
 	Array3D<int> *map_Nrays;
 
-    void run_map( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
-    inline int map_ray(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
+    void run_map( T r_max = 1000 );
+    inline int map_ray(int ray, const T rlim, const T thetalim, const int steplim);
+    void average_rays();
+
+    void save(char* filename);
 
 };
 
