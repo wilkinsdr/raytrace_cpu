@@ -25,7 +25,6 @@ public:
 	{
 
 	}
-
 	virtual ~ParameterException() throw()
 	{   }
 
@@ -34,6 +33,7 @@ public:
 		return what_msg.c_str();
 	}
 };
+
 
 class ParameterFile
 {
@@ -73,7 +73,6 @@ private:
 	{
 		size_t sep_pos = line.find(SEP_CHAR);
 		string key = line.substr(0, sep_pos);
-
 
 		// remove leading and trailing whitespace
 		key.erase(0, key.find_first_not_of("\t "));
@@ -171,7 +170,7 @@ public:
 
 		istringstream istr(pars.find(key)->second);
 
-		int read_values;
+		//int read_values;
 		for(int i=0; i<n_elem; i++)
 		{
 			if (!(istr >> arr[i]))
