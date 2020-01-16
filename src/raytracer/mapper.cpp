@@ -75,11 +75,11 @@ void Mapper<T>::run_map( T r_max )
 	// Arguments:
 	//	r_max		T		Limiting outer radius for propagation in Rg (default value = 1000)
 	//
-	cout << "Running source raytracer..." << endl;
+	cout << "Running mapper..." << endl;
 
 	for(int ray=0; ray<Raytracer<T>::nRays; ray++)
 	{
-		if(ray % 100 == 0) cout << "Ray " << ray << '/' << Raytracer<T>::nRays << endl;
+		if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<T>::nRays;
 		if(Raytracer<T>::m_steps[ray] == -1) return;
 		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) return;
 
@@ -87,6 +87,7 @@ void Mapper<T>::run_map( T r_max )
 		n = map_ray(ray, r_max, theta_max, STEPLIM);
 		Raytracer<T>::m_steps[ray] += n;
 	}
+	cout << endl;
 
 	average_rays();
 }
