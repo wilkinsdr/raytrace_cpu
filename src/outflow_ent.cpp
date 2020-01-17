@@ -43,6 +43,9 @@ int main(int argc, char** argv)
 	double enmax = par_file.get_parameter<double>("enmax");
 	int Nen = par_file.get_parameter<int>("Nen");
 	bool logbin_en = par_file.get_parameter<bool>("logbin_en", false);
+	double t0 = par_file.get_parameter<double>("t0");
+	double tmax = par_file.get_parameter<double>("tmax");
+	int Nt = par_file.get_parameter<int>("Nt");
 	double source_size_xy = par_file.get_parameter<double>("source_size_xy");
 	double source_size_z = par_file.get_parameter<double>("source_size_z");
 	double source_vel = par_file.get_parameter<double>("source_vel");
@@ -57,7 +60,7 @@ int main(int argc, char** argv)
 	cout << "Spin a = " << spin << endl;
 	cout << "*****" << endl << endl;
 
-	RaytraceSource = new SourceTracer_ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, en0, enmax, Nen, logbin_en, tol, plane_phi0);
+	RaytraceSource = new SourceTracer_ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, en0, enmax, Nen, logbin_en, t0, tmax, Nt, tol, plane_phi0);
 	RaytraceSource->set_source(source_size_xy, source_size_z, source_vel, source_motion);
 	RaytraceSource->RedshiftStart();
 	RaytraceSource->run_source_trace( 1.5*dist );
