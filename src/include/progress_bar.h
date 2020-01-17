@@ -1,0 +1,8 @@
+//
+// Created by drw on 15/01/2020.
+//
+
+#ifndef RAYTRACE_CPU_PROGRESS_BAR_H
+#define RAYTRACE_CPU_PROGRESS_BAR_H
+
+#endif //RAYTRACE_CPU_PROGRESS_BAR_H
