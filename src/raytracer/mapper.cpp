@@ -22,6 +22,9 @@ Mapper<T>::Mapper( int num_rays, float spin_par, T init_r0, T init_rmax, int ini
 	map_time->zero();
 	map_redshift->zero();
 	map_Nrays->zero();
+
+	bin_volume = new Array3D<T>(Nr, Ntheta, Nphi);
+	calculate_volume();
 }
 
 template <typename T>
@@ -47,6 +50,7 @@ Mapper<T>::Mapper(char* load_filename) : Raytracer<T>(1, 0)
 	map_time->read(&infile);
 	map_redshift->read(&infile);
 	map_Nrays->read(&infile);
+	bin_volume->read(&infile);
 
 	infile.close();
 }
@@ -77,17 +81,21 @@ void Mapper<T>::run_map( T r_max )
 	//
 	cout << "Running mapper..." << endl;
 
+	ProgressBar prog(Raytracer<T>::nRays, "Ray");
 	for(int ray=0; ray<Raytracer<T>::nRays; ray++)
 	{
-		if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<T>::nRays;
-		if(Raytracer<T>::m_steps[ray] == -1) return;
-		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) return;
+		//if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<T>::nRays;
+		prog.show(ray+1);
+		if(Raytracer<T>::m_steps[ray] == -1) continue;
+		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) continue;
 
 		int n;
 		n = map_ray(ray, r_max, theta_max, STEPLIM);
 		Raytracer<T>::m_steps[ray] += n;
 	}
-	cout << endl;
+	//prog.show_complete();
+	prog.done();
+	//cout << endl;
 
 	average_rays();
 }
@@ -264,6 +272,7 @@ void Mapper<T>::save(char* filename)
 	map_time->write(&outfile);
 	map_redshift->write(&outfile);
 	map_Nrays->write(&outfile);
+	bin_volume->write(&outfile);
 	outfile.close();
 }
 
@@ -272,6 +281,36 @@ void Mapper<T>::average_rays()
 {
 	(*map_time) /= (*map_Nrays);
 	(*map_redshift) /= (*map_Nrays);
+}
+
+template <typename T>
+void Mapper<T>::calculate_volume()
+{
+	const T a = Raytracer<T>::spin;
+
+	for(int ir=0; ir<Nr; ir++)
+	{
+		const T r = (logbin_r) ? r0 * pow(dr, ir) : r0 + dr*ir;
+		const T bin_dr = (logbin_r) ? r*(dr - 1) : dr;
+
+		for(int itheta=0; itheta<Ntheta; itheta++)
+		{
+			const T theta = itheta * dtheta;
+
+			const T rhosq = r * r + (a * cos(theta)) * (a * cos(theta));
+			const T delta = r * r - 2 * r + a * a;
+			const T sigmasq = (r * r + a * a) * (r * r + a * a) - a * a * delta * sin(theta) * sin(theta);
+			const T e2nu = rhosq * delta / sigmasq;
+			const T e2psi = sigmasq * sin(theta) * sin(theta) / rhosq;
+			const T omega = 2 * a * r / sigmasq;
+			const T grr = -rhosq / delta;
+			const T gthth = -rhosq;
+			const T gphph = -e2psi;
+
+			for (int iphi = 0; iphi < Nphi; iphi++)
+				(*bin_volume)[ir][itheta][iphi] = sqrt(grr * gthth * gphph) * bin_dr * dtheta * dphi;
+		}
+	}
 }
 
 template class Mapper<double>;

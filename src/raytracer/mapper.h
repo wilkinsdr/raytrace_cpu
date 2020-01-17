@@ -23,6 +23,7 @@ using namespace std;
 #include "../include/kerr.h"
 #include "../include/array.h"
 #include "raytracer.h"
+#include "../include/progress_bar.h"
 
 
 template <typename T>
@@ -49,12 +50,15 @@ public:
 
 	Array3D<T> *map_time, *map_redshift, *map_flux;
 	Array3D<int> *map_Nrays;
+	Array3D<T> *bin_volume;
 
     void run_map( T r_max = 1000 );
     inline int map_ray(int ray, const T rlim, const T thetalim, const int steplim);
     void average_rays();
 
     void save(char* filename);
+
+    void calculate_volume();
 
 };
 
