@@ -11,3 +11,6 @@ add_executable(outflow outflow.cpp)
 target_link_libraries(outflow sourcetracer_imageplane sourcetracer raytracer)
 
 add_executable(pcyg pcyg.cpp)
+
+add_executable(pointsource_mapper pointsource_mapper.cpp)
+target_link_libraries(pointsource_mapper mapper_pointsource mapper raytracer)
