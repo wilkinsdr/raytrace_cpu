@@ -17,7 +17,7 @@ int main()
     const int Nen = 1000;
     const bool logbin_en = false;
     const double dens = 1;
-    const double tau = 2.0;
+    const double tau = 1.5;
     const double line_emis = 0.000001;
 
     const double dx = 2 * rsph / Nx;
