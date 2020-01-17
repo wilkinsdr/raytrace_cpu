@@ -8,8 +8,8 @@
 #include "source_tracer.h"
 
 template <typename T>
-SourceTracer<T>::SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, float toler, bool init_reverse )
-	: Raytracer<T>(num_rays, spin_par, toler), en0(init_en0), enmax(init_enmax), Nen(init_Nen), logbin_en(init_logbin_en), reverse(init_reverse)
+SourceTracer<T>::SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, T init_t0, T init_tmax, int init_Nt, float toler, bool init_reverse )
+	: Raytracer<T>(num_rays, spin_par, toler), en0(init_en0), enmax(init_enmax), Nen(init_Nen), logbin_en(init_logbin_en), t0(init_t0), tmax(init_tmax), Nt(init_Nt), reverse(init_reverse), mapper(nullptr)
 {
 	emis = new T*[num_rays];
 	absorb = new T*[num_rays];
@@ -22,6 +22,16 @@ SourceTracer<T>::SourceTracer( int num_rays, float spin_par, T init_en0, T init_
 		{
 			emis[i][j] = 0;
 			absorb[i][j] = 0;
+		}
+	}
+
+	emis_ent = new T*[Nen];
+	for(int i=0; i<Nen; i++)
+	{
+		emis_ent[i] = new T[Nt];
+		for(int j=0; j<Nt; j++)
+		{
+			emis_ent[i][j] = 0;
 		}
 	}
 
@@ -39,8 +49,13 @@ SourceTracer<T>::~SourceTracer( )
 		delete[] emis[i];
 		delete[] absorb[i];
 	}
+	for(int i=0; i<Nt; i++)
+	{
+		delete[] emis_ent[i];
+	}
 	delete[] emis;
 	delete[] absorb;
+	delete[] emis_ent;
 }
 
 template <typename T>
@@ -63,11 +78,12 @@ void SourceTracer<T>::run_source_trace( T r_max, T theta_max, TextOutput* outfil
 	//
 	cout << "Running source raytracer..." << endl;
 
+	ProgressBar prog(Raytracer<T>::nRays, "Ray");
 	for(int ray=0; ray<Raytracer<T>::nRays; ray++)
 	{
-		if(ray % 100 == 0) cout << "Ray " << ray << '/' << Raytracer<T>::nRays << endl;
-		if(Raytracer<T>::m_steps[ray] == -1) return;
-		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) return;
+		prog.show(ray+1);
+		if(Raytracer<T>::m_steps[ray] == -1) continue;
+		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) continue;
 
 		int n;
 		n = propagate_source(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
@@ -76,6 +92,7 @@ void SourceTracer<T>::run_source_trace( T r_max, T theta_max, TextOutput* outfil
 		if(outfile != 0)
 			outfile->newline(2);
 	}
+	prog.done();
 }
 
 template <typename T>
@@ -188,24 +205,51 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 		theta += dtheta;
 		phi += dphi;
 
+		if(r <= Raytracer<T>::horizon)
+		{
+			Raytracer<T>::m_status[ray] = 1;
+			break;
+		}
+
+		if(stopping_fn_set)
+			if(stopping_fn(t, r, theta, phi, stopping_args))
+			{
+				Raytracer<T>::m_status[ray] = 2;
+				break;
+			}
+
 		if ( (r*r*sin(theta)*sin(theta)*cos(phi)*cos(phi)/(source_size_xy*source_size_xy) + r*r*sin(theta)*sin(theta)*sin(phi)*sin(phi)/(source_size_xy*source_size_xy) + r*r*cos(theta)*cos(theta)/(source_size_z*source_size_z)) < 1 )
 		{
 			const T len = -1*(grr * dr * dr + gthth * dtheta * dtheta + gphph * dphi * dphi);
 			const T dens = 1;
 
 			const T energy = 1. / Raytracer<T>::ray_redshift(source_vel, reverse, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<T>::m_emit[ray], source_motion);
-			int ien = (logbin_en) ? static_cast<int>( log(energy / en0) / log(den)) : static_cast<int>((energy - en0) / den);
+			const int ien = (logbin_en) ? static_cast<int>( log(energy / en0) / log(den)) : static_cast<int>((energy - en0) / den);
+
+			int ir, itheta, iphi;
+
+			if(mapper != nullptr)
+			{
+				ir = (mapper->logbin_r) ? static_cast<int>( log(r / mapper->r0) / log(mapper->dr)) : static_cast<int>((r - mapper->r0) / mapper->dr);
+				itheta = static_cast<int>(theta / mapper->dtheta);
+				iphi = static_cast<int>((phi + M_PI) / mapper->dphi);
+
+				if(ir < 0 || ir >= mapper->Nr || itheta < 0 || itheta > mapper->Ntheta || iphi < 0 || iphi > mapper->Nphi) continue;
+				if(!(*(mapper->map_Nrays)[ir][itheta][iphi] > 0)) continue;
+			}
+
+			const T emissivity = (mapper != nullptr) ? pow(*(mapper->map_redshift)[ir][itheta][iphi], -2) * *(mapper->map_Nrays)[ir][itheta][iphi] / *(mapper->bin_volume)[ir][itheta][iphi] : (1./(r*r));
+			const T time = (mapper != nullptr) ? t + *(mapper->map_time)[ir][itheta][iphi] : t;
+			const int it = (t - t0) / dt;
 
 			if(ien >= 0 && ien < Nen)
 			{
-				emis[ray][ien] += (1./(r*r)) * len * dens * pow(energy, 3);
+				emis[ray][ien] += emissivity * len * dens * pow(energy, 3);
 				absorb[ray][ien] += len * dens;
+				if(it >=0 && it < Nt)
+					emis_ent[ien][it] += emissivity * len * dens * pow(energy, 3);
 			}
 		}
-
-		if(r <= Raytracer<T>::horizon) break;
-
-		if(stopping_fn_set) if((*stopping_fn)(t, r, theta, phi, stopping_args)) break;
 
 		if(outfile != 0 && (steps % write_step) == 0 )
 		{

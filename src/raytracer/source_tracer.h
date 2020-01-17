@@ -18,11 +18,14 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <functional>
 using namespace std;
 
 #include "../include/kerr.h"
 #include "../include/text_output.h"
+#include "../include/progress_bar.h"
 #include "raytracer.h"
+#include "mapper.h"
 
 
 template <typename T>
@@ -35,19 +38,22 @@ private:
 	bool reverse;
 
 	bool stopping_fn_set;
-	bool (*stopping_fn)(T, T, T, T, T*);
+	//bool (*stopping_fn)(T, T, T, T, T*);
+	function<bool(T, T, T, T, T*)> stopping_fn;
 	T *stopping_args;
 
+	Mapper<T> *mapper;
+
 public:
-    SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, float toler = TOL, bool reverse = false );
+    SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, T init_t0 = 0, T init_tmax = 1E6, int init_Nt = 1, float toler = TOL, bool reverse = false );
     ~SourceTracer( );
 
 	T *energy;
-	T en0, enmax, den;
-	int Nen;
+	T en0, enmax, den, t0, tmax, dt;
+	int Nen, Nt;
 	bool logbin_en;
 
-	T **emis, **absorb;
+	T **emis, **absorb, **emis_ent;
 
     void run_source_trace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
     inline int propagate_source(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
@@ -58,6 +64,18 @@ public:
 		source_size_z = size_z;
 		source_motion = motion;
 		source_vel = vel;
+	}
+
+	void set_stopping_fn(function<bool(T, T, T, T, T*)> fn, T* args)
+	{
+		stopping_fn = fn;
+		stopping_fn_set = true;
+		stopping_args = args;
+	}
+
+	void add_mapper(Mapper<T>* map_ptr)
+	{
+		mapper = map_ptr;
 	}
 };
 
