@@ -51,6 +51,7 @@ protected:	// these members need to be accessible by derived classes to set up d
 	T *m_k, *m_h, *m_Q;
 	T *m_emit, *m_redshift;
 	int *m_steps;
+	int *m_status;
 	int *m_rdot_sign, *m_thetadot_sign;
 
 	inline void CalculateConstants(int ray, T alpha, T beta, T V, T E);
@@ -100,6 +101,10 @@ public:
     {
     	return m_redshift;
     }
+	int* GetStatus( )
+	{
+		return m_status;
+	}
 
     void MapResults( int*& p_steps, T*& p_t, T*& p_r, T*& p_theta, T*& p_phi, T*& p_redshift )
     {

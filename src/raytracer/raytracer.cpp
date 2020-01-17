@@ -40,6 +40,7 @@ Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
 	m_ptheta = new T[nRays];
 	m_pphi = new T[nRays];
 	m_steps = new int[nRays];
+	m_status = new int[nRays];
 	m_emit = new T[nRays];
 	m_redshift = new T[nRays];
     m_k = new T[nRays];
@@ -49,7 +50,10 @@ Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
     m_thetadot_sign = new int[nRays];
 
     for(int ray=0; ray<nRays; ray++)
-    	m_steps[ray] = -1;
+    {
+	    m_steps[ray] = -1;
+	    m_status[ray] = 0;
+    }
 }
 
 template <typename T>
@@ -69,6 +73,7 @@ Raytracer<T>::~Raytracer( )
 	delete[] m_ptheta;
 	delete[] m_pphi;
 	delete[] m_steps;
+	delete[] m_status;
 	delete[] m_emit;
 	delete[] m_redshift;
 	delete[] m_k;
