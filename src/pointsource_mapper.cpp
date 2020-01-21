@@ -46,11 +46,11 @@ int main(int argc, char** argv)
 	int Ntheta = par_file.get_parameter<int>("Ntheta");
 	int Nphi = par_file.get_parameter<int>("Nphi");
 
-	Mapper_PointSource<double> mapper(source, V, spin, dcosalpha, dbeta, r0, rmax, Nr, Ntheta, Nphi, logbin_r, thetamax);
+	Mapper_PointSource mapper(source, V, spin, dcosalpha, dbeta, r0, rmax, Nr, Ntheta, Nphi, logbin_r, thetamax);
 
 	mapper.RedshiftStart();
 	mapper.run_map(rmax);
-	mapper.save((char*)out_filename.c_str());
+	mapper.save_hdf((char*)out_filename.c_str());
 
 	return 0;
 }

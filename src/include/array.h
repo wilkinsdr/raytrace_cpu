@@ -8,6 +8,9 @@
 #ifndef ARRAY_H_
 #define ARRAY_H_
 
+#include "H5Cpp.h"
+using namespace H5;
+
 template <typename T>
 class Array2D
 {
@@ -61,6 +64,20 @@ public:
 	void read(ifstream* infile)
 	{
 		infile->read(reinterpret_cast<char*> (ptr[0]), num_x * num_y * sizeof(T));
+	}
+
+	void write_hdf(CommonFG* container, const char* name)
+	{
+		PredType type = PredType::NATIVE_DOUBLE;
+		if(typeid(T) == typeid(double)) type = PredType::NATIVE_DOUBLE;
+		else if(typeid(T) == typeid(float)) type = PredType::NATIVE_FLOAT;
+		else if(typeid(T) == typeid(long)) type = PredType::NATIVE_LONG;
+		else if(typeid(T) == typeid(int)) type = PredType::NATIVE_INT;
+
+		hsize_t arr_dims[] = {num_x, num_y};
+		DataSpace arr_dataspace(2, arr_dims);
+		DataSet arr_dataset = container->createDataSet(name, type, arr_dataspace);
+		arr_dataset.write(ptr[0], type);
 	}
 
 	template<typename T2>
@@ -157,6 +174,20 @@ public:
 		}
 		for(int i=0; i<num_x*num_y*num_z; i++)
 			pool[i] /= other.pool[i];
+	}
+
+	void write_hdf(CommonFG* container, const char* name)
+	{
+		PredType type = PredType::NATIVE_DOUBLE;
+		if(typeid(T) == typeid(double)) type = PredType::NATIVE_DOUBLE;
+		else if(typeid(T) == typeid(float)) type = PredType::NATIVE_FLOAT;
+		else if(typeid(T) == typeid(long)) type = PredType::NATIVE_LONG;
+		else if(typeid(T) == typeid(int)) type = PredType::NATIVE_INT;
+
+		hsize_t arr_dims[] = {num_x, num_y, num_z};
+		DataSpace arr_dataspace(3, arr_dims);
+		DataSet arr_dataset = container->createDataSet(name, type, arr_dataspace);
+		arr_dataset.write(ptr[0][0], type);
 	}
 };
 

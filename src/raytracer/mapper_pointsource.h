@@ -10,27 +10,26 @@
 
 #include "mapper.h"
 
-template <typename T>
-class Mapper_PointSource : public Mapper<T>
+class Mapper_PointSource : public Mapper
 {
 private:
-	T energy;
-	T velocity;
+	double energy;
+	double velocity;
 
 	int n_cosalpha;
 	int n_beta;
 
-	T* m_cosalpha;
-	T* m_beta;
+	double* m_cosalpha;
+	double* m_beta;
 
 public:
-	Mapper_PointSource( T* pos, T V, T spin, T dcosalpha, T dbeta, T init_r0, T init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, T init_thetamax, T cosalpha0 = -0.999999, T cosalphamax = 0.995, T beta0 = -0.995*M_PI, T betamax = M_PI, T tol = TOL, T E = 1 );
+	Mapper_PointSource( double* pos, double V, double spin, double dcosalpha, double dbeta, double init_r0, double init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, double init_thetamax, double cosalpha0 = -0.999999, double cosalphamax = 0.995, double beta0 = -0.995*M_PI, double betamax = M_PI, double tol = TOL, double E = 1 );
 	~Mapper_PointSource();
 
-	void InitPointSource( T* pos, T dcosalpha, T dbeta, T cosalpha0 = -0.999999, T cosalphamax = 0.995, T beta0 = -0.995*M_PI, T betamax = M_PI );
+	void InitPointSource( double* pos, double dcosalpha, double dbeta, double cosalpha0 = -0.999999, double cosalphamax = 0.995, double beta0 = -0.995*M_PI, double betamax = M_PI );
 
 	void RedshiftStart( );
-	void Redshift( T V );
+	void Redshift( double V );
 
 };
 
