@@ -10,9 +10,9 @@ add_subdirectory (src)
 
 # HDF5
 # HDF5_ROOT and HDF5_INCLUDE_DIRS need to come from CMakeLocal.txt
-set(HDF5_USE_STATIC_LIBRARIES ON)
-find_package(HDF5 REQUIRED CXX)
-set(hdf5 hdf5)
-set(hdf5_cpp hdf5_cpp)
-set(hdf5_libs hdf5_cpp hdf5)
+#set(HDF5_USE_STATIC_LIBRARIES ON)
+#find_package(HDF5 REQUIRED CXX)
+#set(hdf5 hdf5)
+#set(hdf5_cpp hdf5_cpp)
+#set(hdf5_libs hdf5_cpp hdf5)
 
