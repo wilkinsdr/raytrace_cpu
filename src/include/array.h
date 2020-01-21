@@ -10,6 +10,7 @@
 
 #include "H5Cpp.h"
 using namespace H5;
+#include <typeinfo>
 
 template <typename T>
 class Array2D
