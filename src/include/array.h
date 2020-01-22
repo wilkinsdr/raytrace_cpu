@@ -8,6 +8,8 @@
 #ifndef ARRAY_H_
 #define ARRAY_H_
 
+#include <fstream>
+
 #include "H5Cpp.h"
 using namespace H5;
 #include <typeinfo>
