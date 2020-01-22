@@ -85,7 +85,7 @@ void Mapper::run_map( double r_max, int show_progress )
 	for(int ray=0; ray<Raytracer<double>::nRays; ray++)
 	{
 		//if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<double>::nRays;
-		if(show_progress != 0 && (ray % abs(show_progress) == 0)) prog.show(ray+1);
+		if(show_progress != 0 && (ray % abs(show_progress)) == 0) prog.show(ray+1);
 		if(Raytracer<double>::m_steps[ray] == -1) continue;
 		else if(Raytracer<double>::m_steps[ray] >= STEPLIM) continue;
 
