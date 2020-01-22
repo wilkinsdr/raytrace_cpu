@@ -7,8 +7,6 @@
 
 #include "mapper.h"
 
-#include <cmath>
-
 
 Mapper::Mapper( int num_rays, float spin_par, double init_r0, double init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, double init_thetamax, float toler, bool init_reverse )
 	: Raytracer<double>(num_rays, spin_par, toler), r0(init_r0), rmax(init_rmax), Nr(init_Nr), Ntheta(init_Ntheta), Nphi(init_Nphi), logbin_r(init_logbin_r), theta_max(init_thetamax), reverse(init_reverse)
@@ -87,7 +85,7 @@ void Mapper::run_map( double r_max, int show_progress )
 	for(int ray=0; ray<Raytracer<double>::nRays; ray++)
 	{
 		//if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<double>::nRays;
-		if(show_progress != 0 && (ray % abs(show_progress)) == 0) prog.show(ray+1);
+		if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
 		if(Raytracer<double>::m_steps[ray] == -1) continue;
 		else if(Raytracer<double>::m_steps[ray] >= STEPLIM) continue;
 
