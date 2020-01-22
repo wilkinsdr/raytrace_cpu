@@ -67,7 +67,7 @@ public:
 		infile->read(reinterpret_cast<char*> (ptr[0]), num_x * num_y * sizeof(T));
 	}
 
-	void write_hdf(CommonFG* container, const char* name)
+	void write_hdf(Group* container, const char* name)
 	{
 		PredType type = PredType::NATIVE_DOUBLE;
 		if(typeid(T) == typeid(double)) type = PredType::NATIVE_DOUBLE;
@@ -177,7 +177,7 @@ public:
 			pool[i] /= other.pool[i];
 	}
 
-	void write_hdf(CommonFG* container, const char* name)
+	void write_hdf(Group* container, const char* name)
 	{
 		PredType type = PredType::NATIVE_DOUBLE;
 		if(typeid(T) == typeid(double)) type = PredType::NATIVE_DOUBLE;
