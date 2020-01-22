@@ -82,6 +82,7 @@ void Mapper::run_map( double r_max, int show_progress )
 	cout << "Running mapper..." << endl;
 
 	ProgressBar prog(Raytracer<double>::nRays, "Ray", 0, (show_progress > 0));
+	show_progress = abs(show_progress);
 	for(int ray=0; ray<Raytracer<double>::nRays; ray++)
 	{
 		//if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<double>::nRays;
