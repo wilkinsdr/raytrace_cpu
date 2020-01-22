@@ -62,7 +62,7 @@ Mapper::~Mapper( )
 }
 
 
-void Mapper::run_map( double r_max )
+void Mapper::run_map( double r_max, int show_progress )
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -81,11 +81,11 @@ void Mapper::run_map( double r_max )
 	//
 	cout << "Running mapper..." << endl;
 
-	ProgressBar prog(Raytracer<double>::nRays, "Ray");
+	ProgressBar prog(Raytracer<double>::nRays, "Ray", 0, (show_progress > 0));
 	for(int ray=0; ray<Raytracer<double>::nRays; ray++)
 	{
 		//if(ray % 1 == 0) cout << "\rRay " << ray << '/' << Raytracer<double>::nRays;
-		prog.show(ray+1);
+		if(show_progress != 0 && ray % abs(show_progress) == 0) prog.show(ray+1);
 		if(Raytracer<double>::m_steps[ray] == -1) continue;
 		else if(Raytracer<double>::m_steps[ray] >= STEPLIM) continue;
 

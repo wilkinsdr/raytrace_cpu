@@ -19,9 +19,10 @@ private:
 	int length;
 	char* label;
 	int digits;
+	bool draw_bar;
 
 public:
-	ProgressBar(long end, char* init_label = "", int init_length = 0) : end(end), length(init_length), label(init_label)
+	ProgressBar(long end, char* init_label = "", int init_length = 0, bool init_draw = true) : end(end), length(init_length), label(init_label), draw_bar(init_draw)
 	{
 		if(length == 0)
 		{
@@ -44,32 +45,28 @@ public:
 	{
 		ostringstream outstream;
 
-		outstream << "\e[?25l";
-		outstream << "\r" << label << ' ' << setw(digits) << prog << '/' << end << " [";
-		for(int step=1; step<=length; step++)
+		if(draw_bar)
 		{
-			outstream << ((((float)step/length) <= ((float)prog/end)) ? "\u2588" : "-");
+			outstream << "\e[?25l";
+			outstream << "\r" << label << ' ' << setw(digits) << prog << '/' << end << " [";
+			for (int step = 1; step <= length; step++)
+			{
+				outstream << ((((float) step / length) <= ((float) prog / end)) ? "\u2588" : "-");
+			}
+			outstream << ']';
+			outstream << "\e[?25h";
 		}
-		outstream << ']';
-		outstream << "\e[?25h";
+		else
+		{
+			outstream << label << ' ' << setw(digits) << prog << '/' << end << endl;
+		}
 
 		cout << outstream.str();
 	}
 
 	void show_complete()
 	{
-		ostringstream outstream;
-
-		outstream << "\e[?25l";
-		outstream << "\r" << label << ' ' << setw(digits) << end << '/' << end << " [";
-		for(int step=1; step<=length; step++)
-		{
-			outstream << "\u2588";
-		}
-		outstream << ']';
-		outstream << "\e[?25h";
-
-		cout << outstream.str();
+		show(end);
 	}
 
 	void done()

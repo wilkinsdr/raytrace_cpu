@@ -45,11 +45,12 @@ int main(int argc, char** argv)
 	double thetamax = par_file.get_parameter<double>("thetamax", M_PI_2);
 	int Ntheta = par_file.get_parameter<int>("Ntheta");
 	int Nphi = par_file.get_parameter<int>("Nphi");
+	int show_progress = par_file.get_parameter<int>("show_progress", 1);
 
 	Mapper_PointSource mapper(source, V, spin, dcosalpha, dbeta, r0, rmax, Nr, Ntheta, Nphi, logbin_r, thetamax);
 
 	mapper.RedshiftStart();
-	mapper.run_map(rmax);
+	mapper.run_map(rmax, show_progress);
 	mapper.save_hdf((char*)out_filename.c_str());
 
 	return 0;

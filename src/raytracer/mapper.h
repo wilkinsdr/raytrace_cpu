@@ -53,7 +53,7 @@ public:
 	Array3D<int> *map_Nrays;
 	Array3D<double> *bin_volume;
 
-    void run_map( double r_max = 1000 );
+    void run_map( double r_max = 1000, int show_progress = 1 );
     inline int map_ray(int ray, const double rlim, const double thetalim, const int steplim);
     void average_rays();
 
