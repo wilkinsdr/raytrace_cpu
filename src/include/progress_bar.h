@@ -38,7 +38,6 @@ public:
 			}
 			length = w.ws_col - label_length - (2*digits) - 5;
 		}
-		cout << "\e[?25l";
 	}
 
 	void show(long prog)
