@@ -207,6 +207,13 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
 
+		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+		if(pt < 0)
+		{
+			Raytracer<double>::m_status[ray] = -2;
+			break;
+		}
+
 		// calculate new position
 		double dt = pt*step;
 		double dr = pr*step;
@@ -237,9 +244,12 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 				V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 
 			redshift = Raytracer<double>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
-			(*map_time)[ir][itheta][iphi] += t;
-			(*map_redshift)[ir][itheta][iphi] += redshift;
-			++(*map_Nrays)[ir][itheta][iphi];
+			if(redshift > 0 && isfinite(redshift))
+			{
+				(*map_time)[ir][itheta][iphi] += t;
+				(*map_redshift)[ir][itheta][iphi] += redshift;
+				++(*map_Nrays)[ir][itheta][iphi];
+			}
 		}
 
 	}

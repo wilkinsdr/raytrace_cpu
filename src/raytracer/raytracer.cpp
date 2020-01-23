@@ -210,6 +210,13 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
 
+		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+		if(pt < 0)
+		{
+			m_status[ray] = -2;
+			break;
+		}
+
 		// calculate new position
 		t += pt*step;
 		r += pr*step;
