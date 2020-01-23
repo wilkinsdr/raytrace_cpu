@@ -204,6 +204,8 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 		if( step > abs( phi/pphi ) / Raytracer<double>::tolerance ) step = abs( phi/pphi ) / Raytracer<double>::tolerance;
 //		if( step > abs( (phi - M_PI)/pphi ) / tol ) step = abs( (phi - M_PI)/pphi ) / tol;
 //		if( step > abs( (phi - 2*M_PI)/pphi ) / tol ) step = abs( (phi - 2*M_PI)/pphi ) / tol;
+		if( step > abs(Raytracer<double>::max_tstep/pt) ) step = abs(Raytracer<double>::max_tstep / pt);
+		if( step > abs(Raytracer<double>::max_phistep/pphi) ) step = abs(Raytracer<double>::max_phistep / pphi);
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
 
@@ -227,30 +229,33 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 
 		if(r <= Raytracer<double>::horizon) break;
 
+		while(phi > M_PI) phi -= 2*M_PI;
+		while(phi < -1*M_PI) phi += 2*M_PI;
+
 		ir = (logbin_r) ? static_cast<int>( log(r / r0) / log(bin_dr)) : static_cast<int>((r - r0) / bin_dr);
 		itheta = static_cast<int>(theta / bin_dtheta);
 		iphi = static_cast<int>((phi + M_PI) / bin_dphi);
 
-		if(ir != last_ir && itheta != last_itheta && iphi != last_iphi
-			&& ir > 0 && ir < Nr && itheta > 0 && itheta < Ntheta && iphi > 0 && iphi < Nphi)
-		{
-			if(motion == 1)
+		if(ir != last_ir || itheta != last_itheta || iphi != last_iphi)
+			if(ir > 0 && ir < Nr && itheta > 0 && itheta < Ntheta && iphi > 0 && iphi < Nphi)
 			{
-				if (vel_mode == 0) V = vel;
-				else if (vel_mode == 1) V = vel * (r / rmax);
-				else if (vel_mode == 2) V = vel * sqrt(r / rmax);
-			}
-			else
-				V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
+				if(motion == 1)
+				{
+					if (vel_mode == 0) V = vel;
+					else if (vel_mode == 1) V = vel * (r / rmax);
+					else if (vel_mode == 2) V = vel * sqrt(r / rmax);
+				}
+				else
+					V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 
-			redshift = Raytracer<double>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
-			if(redshift > 0 && isfinite(redshift))
-			{
-				(*map_time)[ir][itheta][iphi] += t;
-				(*map_redshift)[ir][itheta][iphi] += redshift;
-				++(*map_Nrays)[ir][itheta][iphi];
+				redshift = Raytracer<double>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
+				if(redshift > 0 && isfinite(redshift))
+				{
+					(*map_time)[ir][itheta][iphi] += t;
+					(*map_redshift)[ir][itheta][iphi] += redshift;
+					++(*map_Nrays)[ir][itheta][iphi];
+				}
 			}
-		}
 
 	}
 

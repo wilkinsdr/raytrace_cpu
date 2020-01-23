@@ -57,7 +57,7 @@ public:
     inline int map_ray(int ray, const double rlim, const double thetalim, const int steplim);
     void average_rays();
 
-	void set_motion(double init_vel, int init_vel_mode = 0, int init_motion = 1)
+	void set_motion(double init_vel, int init_motion = 1,  int init_vel_mode = 0)
 	{
 		vel = init_vel;
 		vel_mode = init_vel_mode;
