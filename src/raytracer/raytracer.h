@@ -44,6 +44,8 @@ protected:	// these members need to be accessible by derived classes to set up d
 	T spin;
 	float tolerance;
 	float horizon;
+	float max_phistep;
+	float max_tstep;
 
 	// pointers for ray variables
 	T *m_t, *m_r, *m_theta, *m_phi;
@@ -58,7 +60,7 @@ protected:	// these members need to be accessible by derived classes to set up d
 	inline void CalculateConstantsFromP(int ray, T pt, T pr, T ptheta, T pphi);
 
 public:
-    Raytracer( int num_rays, float spin, float tol = TOL);
+    Raytracer( int num_rays, float spin, float tol = TOL, float init_max_phistep = 0.1, float init_max_tstep = 1 );
     ~Raytracer( );
 
     void RunRaytrace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );

@@ -8,10 +8,12 @@
 #include "raytracer.h"
 
 template <typename T>
-Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
+Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, float init_max_phistep, float init_max_tstep )
 	: nRays( num_rays )
 	,  spin(spin_par)
 	, tolerance(toler)
+	, max_phistep(init_max_phistep)
+	, max_tstep(init_max_tstep)
 {
 	//
 	// Constructor function - allocates host and device memory for each ray to store ray position, momentum,
@@ -207,6 +209,8 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 		if( step > abs( phi/pphi ) / tolerance ) step = abs( phi/pphi ) / tolerance;
 //		if( step > abs( (phi - M_PI)/pphi ) / tol ) step = abs( (phi - M_PI)/pphi ) / tol;
 //		if( step > abs( (phi - 2*M_PI)/pphi ) / tol ) step = abs( (phi - 2*M_PI)/pphi ) / tol;
+		if( step > abs(Raytracer<double>::max_tstep/pt) ) step = abs(Raytracer<double>::max_tstep / pt);
+		if( step > abs(Raytracer<double>::max_phistep/pphi) ) step = abs(Raytracer<double>::max_phistep / pphi);
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
 

@@ -45,9 +45,13 @@ int main(int argc, char** argv)
 	double thetamax = par_file.get_parameter<double>("thetamax", M_PI_2);
 	int Ntheta = par_file.get_parameter<int>("Ntheta");
 	int Nphi = par_file.get_parameter<int>("Nphi");
+	double source_velocity = par_file.get_parameter<double>("source_velocity");
+	int source_vel_mode = par_file.get_parameter<int>("source_vel_mode", 0);
+	int source_motion = par_file.get_parameter<int>("source_motion", 1);
 	int show_progress = par_file.get_parameter<int>("show_progress", 1);
 
 	Mapper_PointSource mapper(source, V, spin, dcosalpha, dbeta, r0, rmax, Nr, Ntheta, Nphi, logbin_r, thetamax);
+	mapper.set_motion(source_velocity, source_motion, source_vel_mode);
 
 	mapper.RedshiftStart();
 	mapper.run_map(rmax, show_progress);
