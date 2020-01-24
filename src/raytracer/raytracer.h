@@ -23,7 +23,7 @@
 // total number of steps allowed per ray before it's aborted
 #define STEPLIM 10000000
 // smallest integration step  to prevent infinite loops of infinitesimal steps
-#define MIN_STEP 1E-12
+#define MIN_STEP 1E-6
 // minimum number of integration steps needed for a ray to be included in analysis
 #define COUNT_MIN 100
 
