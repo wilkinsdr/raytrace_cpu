@@ -229,6 +229,8 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 
 		if(r <= Raytracer<double>::horizon) break;
 
+		if(abs(phi) > 1000 || phi != phi || isinf(phi)) break;
+
 		while(phi > M_PI) phi -= 2*M_PI;
 		while(phi < -1*M_PI) phi += 2*M_PI;
 
