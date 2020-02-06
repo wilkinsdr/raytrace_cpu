@@ -14,3 +14,6 @@ add_executable(pcyg pcyg.cpp)
 
 add_executable(pointsource_mapper pointsource_mapper.cpp raytracer/mapper_pointsource.cpp raytracer/mapper.cpp)
 target_link_libraries(pointsource_mapper raytracer hdf5_cpp hdf5)
+
+add_executable(healpix_to_disc healpix_to_disc.cpp)
+target_link_libraries(healpix_to_disc healpix_pointsource raytracer)
