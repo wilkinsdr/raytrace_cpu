@@ -47,6 +47,7 @@ int main(int argc, char** argv)
 
 	raytrace_source.RedshiftStart();
 	raytrace_source.RunRaytrace(rmax, M_PI_2, show_progress);
+	raytrace_source.RangePhi();
 	raytrace_source.Redshift(-1);
 
     raytrace_source.MapResults(steps, t, r, theta, phi, redshift);
