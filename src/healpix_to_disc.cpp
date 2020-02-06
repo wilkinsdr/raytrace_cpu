@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 	                                              :  par_file.get_parameter<double>("spin");
 	int order = par_file.get_parameter<int>("order");
     double rmax = par_file.get_parameter<double>("rmax", 1000);
+    double r_disc = par_file.get_parameter<double>("r_disc", 500);
 	int show_progress = par_file.get_parameter<int>("show_progress", 1);
 
 	double r_isco = KerrISCO<double>(spin, +1);
@@ -55,10 +56,10 @@ int main(int argc, char** argv)
     {
         double pix_r = r[5*pix+4];
         double pix_theta = theta[5*pix+4];
-        if(pix_r > r_isco || pix_theta > (M_PI_2 - 1E-2))
-            outfile << pix << r[5*pix+4] << redshift[5*pix+4] << endl;
+        if(pix_r > r_isco && pix_theta > (M_PI_2 - 1E-2) && pix_r < r_disc)
+            outfile << pix << r[5*pix+4] << phi[5*pix+4] << redshift[5*pix+4] << endl;
         else
-            outfile << pix << 0 << 0 << endl;
+            outfile << pix << 0 << 0 << 0 << endl;
     }
     outfile.Close();
 
