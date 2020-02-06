@@ -34,7 +34,7 @@ using namespace std;
 
 #include "../include/kerr.h"
 #include "../include/text_output.h"
-
+#include "../include/progress_bar.h"
 
 template <typename T>
 class Raytracer
@@ -63,7 +63,7 @@ public:
     Raytracer( int num_rays, float spin, float tol = TOL, float init_max_phistep = 0.1, float init_max_tstep = 1 );
     ~Raytracer( );
 
-    void RunRaytrace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
+    void RunRaytrace( T r_max = 1000, T theta_max = M_PI/2, int show_progress = 1, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
     inline int Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
     void RedshiftStart( T V, bool reverse = false, bool projradius = false );

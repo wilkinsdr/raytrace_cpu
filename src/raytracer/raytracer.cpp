@@ -86,7 +86,7 @@ Raytracer<T>::~Raytracer( )
 }
 
 template <typename T>
-void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+void Raytracer<T>::RunRaytrace( T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -105,10 +105,13 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 	//
 	cout << "Running raytracer..." << endl;
 
+	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
 	for(int ray=0; ray<nRays; ray++)
 	{
-		if(m_steps[ray] == -1) return;
-		else if(m_steps[ray] >= STEPLIM) return;
+        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
+	    if(m_steps[ray] == -1) continue;
+		else if(m_steps[ray] >= STEPLIM) continue;
 
 		int n;
 		n = Propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
@@ -117,6 +120,7 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 		if(outfile != 0)
 			outfile->newline(2);
 	}
+    prog.done();
 }
 
 template <typename T>
