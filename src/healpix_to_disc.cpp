@@ -60,7 +60,7 @@ int main(int argc, char** argv)
         if(pix_r > r_isco && pix_theta > (M_PI_2 - 1E-2) && pix_r < r_disc)
             outfile << pix << r[5*pix+4] << phi[5*pix+4] << redshift[5*pix+4] << endl;
         else
-            outfile << pix << 0 << 0 << 0 << endl;
+            outfile << pix << "nan" << "nan" << "nan" << endl;
     }
     outfile.Close();
 
