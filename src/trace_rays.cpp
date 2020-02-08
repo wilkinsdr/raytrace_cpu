@@ -52,11 +52,11 @@ int main( )
 	TextOutput outfile(out_filename);
 
 	RaytraceSource = new PointSource<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax );
-	RaytraceSource->RunRaytrace( r_max, theta_max, &outfile, write_step );
+    RaytraceSource->run_raytrace(r_max, theta_max, &outfile, write_step);
 
 	delete RaytraceSource;
 
-	outfile.Close();
+	outfile.close();
 
 	cout << "Done" << endl;
 

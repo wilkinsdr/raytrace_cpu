@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 	for(int ien=0; ien<Nen; ien++)
 		emis[ien] = 0;
 
-	for(int ray=0; ray<RaytraceSource->GetCount(); ray++)
+	for(int ray=0; ray< RaytraceSource->get_count(); ray++)
 	{
 		for(int ien=0; ien<Nen; ien++)
 		{
@@ -103,17 +103,17 @@ int main(int argc, char** argv)
 	RaytraceSource->RedshiftStart();
 	RaytraceSource->set_stopping_fn(pointsource_stop, stopping_args);
 	RaytraceSource->run_source_trace( 1.5*dist );
-	int* ray_status = RaytraceSource->GetStatus();
+	int* ray_status = RaytraceSource->get_status();
 	double *ray_t, *ray_r, *ray_theta, *ray_phi, *ray_redshift;
 	int *ray_steps;
-	RaytraceSource->MapResults(ray_steps, ray_t, ray_r, ray_theta, ray_phi, ray_redshift);
+    RaytraceSource->map_results(ray_steps, ray_t, ray_r, ray_theta, ray_phi, ray_redshift);
 
 	double *obs_continuum;
 	obs_continuum = new double[RaytraceSource->Nen];
 	double max_tau = 0;
 
 	int pointsource_count = 0;
-	for(int ray=0; ray<RaytraceSource->GetCount(); ray++)
+	for(int ray=0; ray< RaytraceSource->get_count(); ray++)
 	{
 		if(ray_status[ray] == 2)
 		{
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	for(int ray=0; ray<RaytraceSource->GetCount(); ray++)
+	for(int ray=0; ray< RaytraceSource->get_count(); ray++)
 	{
 		if(ray_status[ray] == 2)
 		{
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 	{
 		outfile << RaytraceSource->energy[ien] << emis[ien] << endl;
 	}
-	outfile.Close();
+    outfile.close();
 
 	cout << "Done" << endl;
 

@@ -28,26 +28,73 @@ void calc_consts_from_vector(T& k, T& h, T& Q, int& rdot_sign, int& thetadot_sig
     const T g11 = -rhosq/delta;
     const T g22 = -rhosq;
     const T g33 = -e2psi;
-    // tetrad basis vector components (they're right-handed!)
-    const T et0 = 1 / sqrt(g00 + g11*V*V);
-    const T et1 = V * et0;
 
-    const T e12 = 1/sqrt(rhosq);
-
-    const T e23 = sqrt( g00 / (g03*g03 - g00*g33) );
-    const T e20 = -(g03/g00) * e23;
-
-    const T e30 = sqrt( -g11 / g00 ) * V / sqrt( g00 + g11*V*V );
-    const T e31 = sqrt( -g00 / g11 ) / sqrt( g00 + g11*V*V );
+    T tdot, rdot, thetadot, phidot;
 
     // photon 4-momentum in source frame
     const T rdotprime[] = { E, E*vec[0], E*vec[1], E*vec[2] };
 
-    const T tdot = rdotprime[0]*et0 + rdotprime[1]*e20 + rdotprime[3]*e30;
-    const T phidot = rdotprime[1]*e23;
-    const T rdot = rdotprime[0]*et1 + rdotprime[3]*e31;
-    const T thetadot = rdotprime[2]*e12;
+    if(motion == 0)
+    {
+        // orbital motion
+        if(basis == 0)
+        {
+            // tetrad basis vector components
+            const T et0 = (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu);
+            const T et3 = (1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu);
+            //
+            const T e10 = (V - omega)*sqrt(e2psi/e2nu) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
+            const T e13 = (1/sqrt(e2nu*e2psi))*(e2nu + V*omega*e2psi - omega*omega*e2psi) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
+            //
+            const T e22 = -1/sqrt(rhosq);
+            //
+            const T e31 = sqrt(delta/rhosq);
 
+            tdot = rdotprime[0]*et0 + rdotprime[1]*e10;
+            phidot = rdotprime[0]*et3 + rdotprime[1]*e13;
+            rdot = rdotprime[3]*e31;
+            thetadot = rdotprime[2]*e22;
+        }
+        else if(basis == 1)
+        {
+            // tetrad basis vector components
+            const T et0 = (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu);
+            const T et3 = (1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu);
+            //
+            const T e10 = (V - omega)*sqrt(e2psi/e2nu) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
+            const T e13 = (1/sqrt(e2nu*e2psi))*(e2nu + V*omega*e2psi - omega*omega*e2psi) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
+            //
+            const T e32 = -1/sqrt(rhosq);
+            //
+            const T e21 = -1 * sqrt(delta/rhosq);
+
+            tdot = rdotprime[0]*et0 + rdotprime[1]*e10;
+            phidot = rdotprime[0]*et3 + rdotprime[1]*e13;
+            rdot = rdotprime[2]*e21;
+            thetadot = rdotprime[3]*e32;
+        }
+    }
+    else if(motion == 1)
+    {
+        // radial motion
+
+        // tetrad basis vector components (they're right-handed!)
+        const T et0 = 1 / sqrt(g00 + g11 * V * V);
+        const T et1 = V * et0;
+
+        const T e12 = 1 / sqrt(rhosq);
+
+        const T e23 = sqrt(g00 / (g03 * g03 - g00 * g33));
+        const T e20 = -(g03 / g00) * e23;
+
+        const T e30 = sqrt(-g11 / g00) * V / sqrt(g00 + g11 * V * V);
+        const T e31 = sqrt(-g00 / g11) / sqrt(g00 + g11 * V * V);
+
+        tdot = rdotprime[0] * et0 + rdotprime[1] * e20 + rdotprime[3] * e30;
+        phidot = rdotprime[1] * e23;
+        rdot = rdotprime[0] * et1 + rdotprime[3] * e31;
+        thetadot = rdotprime[2] * e12;
+    }
     // find the corresponding values of k, h and Q using the geodesic equations
     k = (1 - 2*r/rhosq)*tdot + (2*a*r*sin(theta)*sin(theta)/rhosq)*phidot;
 
