@@ -20,7 +20,7 @@ PointSource<T>::PointSource( T* pos, T V, T spin, T tol, T dcosalpha, T dbeta, T
 	m_beta = new T[Raytracer<T>::nRays];
 
 	cout << "Setting up point source with " << Raytracer<T>::nRays << " rays" << endl;
-	InitPointSource( pos, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax );
+    init_pointsource(pos, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 }
 
 template <typename T>
@@ -31,7 +31,7 @@ PointSource<T>::~PointSource()
 }
 
 template <typename T>
-void PointSource<T>::InitPointSource( T* pos, T dcosalpha, T dbeta, T cosalpha0, T cosalphamax, T beta0, T betamax )
+void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0, T cosalphamax, T beta0, T betamax )
 {
 	for(int i=0; i<n_cosalpha; i++)
 		for(int j=0; j<n_beta; j++)
@@ -69,22 +69,22 @@ void PointSource<T>::InitPointSource( T* pos, T dcosalpha, T dbeta, T cosalpha0,
 }
 
 template <typename T>
-void PointSource<T>::RedshiftStart( )
+void PointSource<T>::redshift_start( )
 {
 	//
-	// Call the RedshiftStart function of the base class using the source's angular velocity
+	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-	Raytracer<T>::RedshiftStart( velocity );
+    Raytracer<T>::redshift_start(velocity);
 }
 
 template <typename T>
-void PointSource<T>::Redshift( T V )
+void PointSource<T>::redshift(T V )
 {
 	//
-	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point
+	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-	Raytracer<T>::Redshift( V );
+    Raytracer<T>::redshift(V);
 }
 
 template class PointSource<double>;

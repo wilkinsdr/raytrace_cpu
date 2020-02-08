@@ -123,19 +123,19 @@ template <typename T>
 void SourceTracer_ImagePlane<T>::RedshiftStart( )
 {
 	//
-	// Call the RedshiftStart function of the base class using the source's angular velocity
+	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-	Raytracer<T>::RedshiftStart( 0, true );
+    Raytracer<T>::redshift_start(0, true);
 }
 
 template <typename T>
 void SourceTracer_ImagePlane<T>::Redshift( bool projradius )
 {
 	//
-	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point
+	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-	Raytracer<T>::Redshift( -1, true, projradius );
+    Raytracer<T>::redshift(-1, true, projradius);
 }
 
 template class SourceTracer_ImagePlane<double>;

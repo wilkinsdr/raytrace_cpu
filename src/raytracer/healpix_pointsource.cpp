@@ -8,7 +8,7 @@
 #include "healpix_pointsource.h"
 
 template <typename T>
-void calc_consts_from_vector(T& k, T& h, T& Q, int& rdot_sign, int& thetadot_sign, T E, T* vec, T& t, T& r, T& theta, T& phi, T V, T a)
+void calc_consts_from_vector(T& k, T& h, T& Q, int& rdot_sign, int& thetadot_sign, T E, T* vec, T& t, T& r, T& theta, T& phi, T V, T a, int motion = 0, int basis = 0)
 {
     //
     // Compute the constants of motion for a ray emitted at polar angles alpha and beta in the frame
@@ -109,7 +109,7 @@ void calc_consts_from_vector(T& k, T& h, T& Q, int& rdot_sign, int& thetadot_sig
 }
 
 template <typename T>
-HealpixPointSource<T>::HealpixPointSource( T* pos, T V, T spin, int order, T tol)
+HealpixPointSource<T>::HealpixPointSource( T* pos, T V, T spin, int order, int motion, int basis, T tol)
 	: Raytracer<T>( 5*12*(1<<order)*(1<<order) , spin , tol ),
 	  velocity(V)
 {
@@ -117,11 +117,11 @@ HealpixPointSource<T>::HealpixPointSource( T* pos, T V, T spin, int order, T tol
     npix = 12*nside*nside;
 
 	cout << "Setting up healpix point source with " << npix << " pixels (" << Raytracer<T>::nRays << " rays)" << endl;
-	InitHealpixPointSource( pos, order );
+	init_healpix_pointsource( pos, order, motion, basis );
 }
 
 template <typename T>
-void HealpixPointSource<T>::InitHealpixPointSource( T* pos, int order )
+void HealpixPointSource<T>::init_healpix_pointsource(T* pos, int order, int motion, int basis )
 {
     for(int pix=0; pix<npix; pix++)
     {
@@ -148,7 +148,7 @@ void HealpixPointSource<T>::InitHealpixPointSource( T* pos, int order )
             Raytracer<T>::m_steps[ix] = 0;
 
             // calculate constants of motion
-            calc_consts_from_vector<T>(Raytracer<T>::m_k[ix], Raytracer<T>::m_h[ix], Raytracer<T>::m_Q[ix], Raytracer<T>::m_rdot_sign[ix], Raytracer<T>::m_thetadot_sign[ix], 1., &corners[3*i], Raytracer<T>::m_t[ix], Raytracer<T>::m_r[ix], Raytracer<T>::m_theta[ix], Raytracer<T>::m_phi[ix], velocity, Raytracer<T>::spin);
+            calc_consts_from_vector<T>(Raytracer<T>::m_k[ix], Raytracer<T>::m_h[ix], Raytracer<T>::m_Q[ix], Raytracer<T>::m_rdot_sign[ix], Raytracer<T>::m_thetadot_sign[ix], 1., &corners[3*i], Raytracer<T>::m_t[ix], Raytracer<T>::m_r[ix], Raytracer<T>::m_theta[ix], Raytracer<T>::m_phi[ix], velocity, Raytracer<T>::spin, motion, basis);
         }
 
         // and the centre ray
@@ -165,29 +165,29 @@ void HealpixPointSource<T>::InitHealpixPointSource( T* pos, int order )
         Raytracer<T>::m_steps[5*pix + 4] = 0;
 
         // calculate constants of motion
-        calc_consts_from_vector<T>(Raytracer<T>::m_k[5*pix + 4], Raytracer<T>::m_h[5*pix + 4], Raytracer<T>::m_Q[5*pix + 4], Raytracer<T>::m_rdot_sign[5*pix + 4], Raytracer<T>::m_thetadot_sign[5*pix + 4], 1., center, Raytracer<T>::m_t[5*pix + 4], Raytracer<T>::m_r[5*pix + 4], Raytracer<T>::m_theta[5*pix + 4], Raytracer<T>::m_phi[5*pix + 4], velocity, Raytracer<T>::spin);
+        calc_consts_from_vector<T>(Raytracer<T>::m_k[5*pix + 4], Raytracer<T>::m_h[5*pix + 4], Raytracer<T>::m_Q[5*pix + 4], Raytracer<T>::m_rdot_sign[5*pix + 4], Raytracer<T>::m_thetadot_sign[5*pix + 4], 1., center, Raytracer<T>::m_t[5*pix + 4], Raytracer<T>::m_r[5*pix + 4], Raytracer<T>::m_theta[5*pix + 4], Raytracer<T>::m_phi[5*pix + 4], velocity, Raytracer<T>::spin, motion, basis);
 
     }
 
 }
 
 template <typename T>
-void HealpixPointSource<T>::RedshiftStart( )
+void HealpixPointSource<T>::redshift_start( )
 {
 	//
-	// Call the RedshiftStart function of the base class using the source's angular velocity
+	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-	Raytracer<T>::RedshiftStart( velocity );
+    Raytracer<T>::redshift_start(velocity);
 }
 
 template <typename T>
-void HealpixPointSource<T>::Redshift( T V )
+void HealpixPointSource<T>::redshift(T V )
 {
 	//
-	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point
+	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-	Raytracer<T>::Redshift( V );
+    Raytracer<T>::redshift(V);
 }
 
 template class HealpixPointSource<double>;

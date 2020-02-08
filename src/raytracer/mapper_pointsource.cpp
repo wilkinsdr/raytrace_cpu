@@ -72,18 +72,18 @@ void Mapper_PointSource::InitPointSource( double* pos, double dcosalpha, double 
 void Mapper_PointSource::RedshiftStart( )
 {
 	//
-	// Call the RedshiftStart function of the base class using the source's angular velocity
+	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-	Raytracer<double>::RedshiftStart( velocity );
+    Raytracer<double>::redshift_start(velocity);
 }
 
 
 void Mapper_PointSource::Redshift( double V )
 {
 	//
-	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point
+	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-	Raytracer<double>::Redshift( V );
+	Raytracer<double>::redshift(V);
 }
 

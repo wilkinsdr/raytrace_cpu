@@ -265,7 +265,7 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 				write_started = true;
 				if(write_cartesian)
 				{
-					Cartesian<T>(x, y, z, r, theta, phi, a);
+                    cartesian<T>(x, y, z, r, theta, phi, a);
 					(*outfile) << t << x << y << z << endl;
 				}
 				else

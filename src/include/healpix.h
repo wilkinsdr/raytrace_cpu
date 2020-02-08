@@ -7,7 +7,7 @@
 
 #define isqrt(x) ((int)sqrt(x+0.5))
 
-// returns the normalized Cartesian coordinate given an x,y coordinate for the given face
+// returns the normalized cartesian coordinate given an x,y coordinate for the given face
 template <typename T>
 void xyf2loc(T x, T y, int face, T* vec) {
     const static int jrll[] = {2,2,2,2,3,3,3,3,4,4,4,4};
@@ -33,7 +33,7 @@ void xyf2loc(T x, T y, int face, T* vec) {
     if (tmp>=8) tmp-=8;
     phi = (nr<1e-15) ? 0 : (0.25*M_PI*tmp)/nr;
 
-    // convert to Cartesian
+    // convert to cartesian
     // NB apply a slight rotation in phi to stop things lining up along axes
     sinTheta = sqrt((1.0-z)*(1.0+z));
     vec[0] = sinTheta*cos(phi+0.05);

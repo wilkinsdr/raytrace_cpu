@@ -23,14 +23,14 @@ private:
     int nside, npix;
 
 public:
-	HealpixPointSource( T* pos, T V, T spin, int order, T tol = TOL );
+	HealpixPointSource( T* pos, T V, T spin, int order, int motion = 0, int basis = 0, T tol = TOL );
 
-	void InitHealpixPointSource( T* pos, int order );
+	void init_healpix_pointsource(T* pos, int order, int motion = 0, int basis = 0 );
 
-	void RedshiftStart( );
-	void Redshift( T V );
+	void redshift_start( );
+	void redshift(T V );
 
-	int GetNumPix()
+	int get_num_pix()
     {
 	    return npix;
     }
