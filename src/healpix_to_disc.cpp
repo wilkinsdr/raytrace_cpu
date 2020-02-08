@@ -75,11 +75,11 @@ int main(int argc, char** argv)
     {
         double pix_r = r[5*pix+4];
         double pix_theta = theta[5*pix+4];
-        double emis = powerlaw3(r[5*pix+4], q_in, rb1, q_mid, rb2, q_out) * pow(redshift[5*pix+4], 3);
+        double emis = powerlaw3(r[5*pix+4], q_in, rb1, q_mid, rb2, q_out) * pow(redshift[5*pix+4], -3);
         if(pix_r > r_isco && pix_theta > (M_PI_2 - 1E-2) && pix_r < r_disc)
             outfile << pix << r[5*pix+4] << phi[5*pix+4] << redshift[5*pix+4] << emis << endl;
         else
-            outfile << pix << "nan" << "nan" << "nan" << endl;
+            outfile << pix << "nan" << "nan" << "nan" << 0 << endl;
     }
     outfile.close();
 
