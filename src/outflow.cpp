@@ -141,7 +141,7 @@ int main(int argc, char** argv)
 	TextOutput outfile((const char*)out_filename.c_str());
 	for(int ien=0; ien<Nen; ien++)
 	{
-		outfile << RaytraceSource->energy[ien] << emis[ien] << endl;
+		outfile << RaytraceSource->energy[ien] << emis[ien] << obs_continuum[ien] << endl;
 	}
 	outfile.Close();
 
