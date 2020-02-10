@@ -27,8 +27,8 @@ public:
 
 	void init_healpix_pointsource(T* pos, int order, int motion = 0, int basis = 0 );
 
-	void redshift_start( );
-	void redshift(T V );
+	void redshift_start(bool reverse = false);
+	void redshift(T V, bool reverse = false);
 
 	int get_num_pix()
     {

@@ -325,6 +325,8 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 		else if(V == -1)
 			V = 1 / (a + m_r[ray]*sqrt(m_r[ray]));
 
+		// if(reverse) V *= -1;
+
 
 		// timelike basis vector
 		const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
@@ -415,6 +417,8 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 			         r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 		else if (V == -1)
 			V = 1 / (spin + r * sqrt(r));
+
+		// if(reverse) V = -1;
 
 		// timelike basis vector
 		et[0] = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);

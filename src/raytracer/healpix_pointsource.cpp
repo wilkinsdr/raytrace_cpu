@@ -172,22 +172,22 @@ void HealpixPointSource<T>::init_healpix_pointsource(T* pos, int order, int moti
 }
 
 template <typename T>
-void HealpixPointSource<T>::redshift_start( )
+void HealpixPointSource<T>::redshift_start(bool reverse)
 {
 	//
 	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-    Raytracer<T>::redshift_start(velocity);
+    Raytracer<T>::redshift_start(velocity, reverse);
 }
 
 template <typename T>
-void HealpixPointSource<T>::redshift(T V )
+void HealpixPointSource<T>::redshift(T V, bool reverse)
 {
 	//
 	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-    Raytracer<T>::redshift(V);
+    Raytracer<T>::redshift(V, reverse);
 }
 
 template class HealpixPointSource<double>;
