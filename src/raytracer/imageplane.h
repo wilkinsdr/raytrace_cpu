@@ -27,10 +27,10 @@ public:
 	ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T tol, T phi = 0);
 	~ImagePlane();
 
-	void InitImagePlane( T D, T incl, T phi0, T x0, T xmax, T dx, T y0, T ymax, T dy);
+	void init_image_plane(T D, T incl, T phi0, T x0, T xmax, T dx, T y0, T ymax, T dy);
 
-	void RedshiftStart( );
-	void Redshift( bool projradius );
+	void redshift_start( );
+	void redshift(bool projradius);
 
 };
 

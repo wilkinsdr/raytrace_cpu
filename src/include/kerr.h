@@ -11,7 +11,7 @@
 #include <cmath>
 
 template<typename T>
-T KerrHorizon(T a, int sign = 1)
+T kerr_horizon(T a, int sign = 1)
 {
 	//
 	// Calculate event horizon in Kerr geometry
@@ -20,7 +20,7 @@ T KerrHorizon(T a, int sign = 1)
 }
 
 template<typename T>
-T KerrISCO(T a, int sign)
+T kerr_isco(T a, int sign)
 {
 	//
 	// Calculate radius of innermost stable circular orbit in Kerr geometry
@@ -32,13 +32,13 @@ T KerrISCO(T a, int sign)
 }
 
 template<typename T>
-T DiscVelocity(T r, T a, int sign)
+T disc_velocity(T r, T a, int sign)
 {
 	return 1 / (a + sign*pow(r, 3./2.));
 }
 
 template<typename T>
-void Cartesian(T& x, T& y, T& z, T r, T theta, T phi, T a)
+void cartesian(T& x, T& y, T& z, T r, T theta, T phi, T a)
 {
   //
   // find the cartesian co-ordinates (aff,x,y,z) in the kerr spacetime
@@ -46,7 +46,7 @@ void Cartesian(T& x, T& y, T& z, T r, T theta, T phi, T a)
   // result stored in first argument (T* x)
   //
   // arguments
-  //   x      T*        stores the calcualted 'Cartesian' co-ordinates
+  //   x      T*        stores the calcualted 'cartesian' co-ordinates
   //   r      T[4]      input Boyer-Lindquist co-ordinates
   //   a      T         BH spin parameter
   //
@@ -56,7 +56,7 @@ void Cartesian(T& x, T& y, T& z, T r, T theta, T phi, T a)
 }
 
 template<typename T>
-T DotProduct(T (*g)[4], T* u, T* v)
+T dot_product(T (*g)[4], T* u, T* v)
 {
 	//
 	// returns the dot product of 4-vectors u and v under the metric g
@@ -72,7 +72,7 @@ T DotProduct(T (*g)[4], T* u, T* v)
 }
 
 template<typename T>
-void Minkowski(T (*g)[4])
+void minkowski(T (*g)[4])
 {
   //
   // return the Minkowski metric, eta = diag(1, -1, -1, -1)
@@ -91,7 +91,7 @@ void Minkowski(T (*g)[4])
 }
 
 template<typename T>
-void Metric(T (*g)[4], T r[4], T a)
+void kerr_metric(T (*g)[4], T *r, T a)
 {
   //
   // calculate Kerr metric coefficients at position r
@@ -124,7 +124,7 @@ void Metric(T (*g)[4], T r[4], T a)
 }
 
 template<typename T>
-void Tetrad(T* et, T* e1, T* e2, T* e3, T r[4], T V, T a)
+void tetrad(T* et, T* e1, T* e2, T* e3, T *r, T V, T a)
 {
   //
   // calculate the tetrad basis vectors of an observer in the Kerr spacetime
@@ -170,7 +170,7 @@ void Tetrad(T* et, T* e1, T* e2, T* e3, T r[4], T V, T a)
 }
 
 template<typename T>
-T Lorentz(T* vel, T v[4], T r[4], T a)
+T lorentz(T* vel, T *v, T *r, T a)
 {
   //
   // returns the Lorentz factor corresponding to a 4-velocity v
@@ -194,10 +194,10 @@ T Lorentz(T* vel, T v[4], T r[4], T a)
   const T omega = 2*a*r[1] / sigmasq;
 
   // metric coefficients
-  Metric(g, r, a);
+    kerr_metric(g, r, a);
 
   // tetrad basis vectors
-  Tetrad(et, e1, e2, e3, r, omega, a);
+    tetrad(et, e1, e2, e3, r, omega, a);
 
   // calculate components of v by dot product with basis vectors (gamma*c, gamma*vel)
   gvel[0] = g[0][0]*v[0]*et[0] + g[0][3]*v[0]*et[3] + g[3][0]*v[3]*et[0] + g[3][3]*v[3]*et[3];
@@ -213,7 +213,7 @@ T Lorentz(T* vel, T v[4], T r[4], T a)
 }
 
 template<typename T>
-T DiscVelocityVector(T* v, T r, T a, int sign)
+T disc_velocity_vector(T* v, T r, T a, int sign)
 {
   //
   // calculate the 4-velocity of an element of the disc in stable circular orbit
@@ -247,7 +247,7 @@ T DiscVelocityVector(T* v, T r, T a, int sign)
 }
 
 template<typename T>
-T DiscArea(T r, T dr, T a)
+T disc_area(T r, T dr, T a)
 {
   //
   // returns the proper area of an annulus in the equatorial plane
@@ -265,7 +265,7 @@ T DiscArea(T r, T dr, T a)
 }
 
 template<typename T>
-T RelDiscArea(T r, T dr, T a)
+T rel_disc_area(T r, T dr, T a)
 {
   //
   // return the effective area of a thin annulus in the equatorial plane (T)
@@ -283,13 +283,13 @@ T RelDiscArea(T r, T dr, T a)
   T V, gr_area, gamma;
 
   pos[1] = r;
-  Metric<T>(g, pos, a);
-  V = DiscVelocityVector<T>(v, r, a, +1);
-  Tetrad(et, e1, e2, e3, pos, V, a);
+    kerr_metric<T>(g, pos, a);
+  V = disc_velocity_vector<T>(v, r, a, +1);
+    tetrad(et, e1, e2, e3, pos, V, a);
 
-  gr_area = DiscArea<T>(r, dr, a);
+  gr_area = disc_area<T>(r, dr, a);
   // Lorentz factor
-  gamma = Lorentz<T>(vel, v, pos, a);
+  gamma = lorentz<T>(vel, v, pos, a);
 
   area = gr_area/gamma;
 
@@ -297,7 +297,7 @@ T RelDiscArea(T r, T dr, T a)
 }
 
 template <typename T>
-inline void MomentumFromConsts(T& pt, T& pr, T& ptheta, T& pphi,
+inline void momentum_from_consts(T& pt, T& pr, T& ptheta, T& pphi,
 						T k, T h, T Q, int rdot_sign, int thetadot_sign,
 						T r, T theta, T phi,
 						const T a)

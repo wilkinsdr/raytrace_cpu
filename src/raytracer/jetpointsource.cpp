@@ -31,7 +31,7 @@ JetPointSource<T>::~JetPointSource()
 }
 
 template <typename T>
-void JetPointSource<T>::InitJetPointSource( T* pos, T dcosalpha, T dbeta, T cosalpha0, T cosalphamax, T beta0, T betamax )
+void JetPointSource<T>::init_jet_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0, T cosalphamax, T beta0, T betamax )
 {
 	for(int i=0; i<n_cosalpha; i++)
 		for(int j=0; j<n_beta; j++)
@@ -70,7 +70,7 @@ void JetPointSource<T>::InitJetPointSource( T* pos, T dcosalpha, T dbeta, T cosa
 }
 
 template <typename T>
-void JetPointSource<T>::RedshiftStart(  )
+void JetPointSource<T>::redshift_start(  )
 {
 	//
 	// Calculates the initial energy of each ray at emission for use in redshift calculations.
@@ -144,7 +144,7 @@ void JetPointSource<T>::RedshiftStart(  )
 }
 
 template <typename T>
-void JetPointSource<T>::Redshift( T V )
+void JetPointSource<T>::redshift(T V )
 {
 	//
 	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point

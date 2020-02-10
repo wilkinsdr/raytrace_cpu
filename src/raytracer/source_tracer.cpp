@@ -194,6 +194,13 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
 
+		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+		if(pt < 0)
+		{
+			Raytracer<T>::m_status[ray] = -2;
+			break;
+		}
+
 		// calculate new position
 		T dt = pt*step;
 		T dr = pr*step;
@@ -258,7 +265,7 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 				write_started = true;
 				if(write_cartesian)
 				{
-					Cartesian<T>(x, y, z, r, theta, phi, a);
+                    cartesian<T>(x, y, z, r, theta, phi, a);
 					(*outfile) << t << x << y << z << endl;
 				}
 				else

@@ -8,10 +8,12 @@
 #include "raytracer.h"
 
 template <typename T>
-Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
+Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, float init_max_phistep, float init_max_tstep )
 	: nRays( num_rays )
 	,  spin(spin_par)
 	, tolerance(toler)
+	, max_phistep(init_max_phistep)
+	, max_tstep(init_max_tstep)
 {
 	//
 	// Constructor function - allocates host and device memory for each ray to store ray position, momentum,
@@ -27,7 +29,7 @@ Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler )
 	//
 
 	// calculate horizon and store in GPU shared memory
-	horizon = KerrHorizon<T>(spin);
+	horizon = kerr_horizon<T>(spin);
 	cout << "Event horizon at " << horizon << endl;
 
 	cout << "Allocating memory (" << 9*nRays*sizeof(T) + nRays*sizeof(int) << " B)" << endl;
@@ -84,7 +86,7 @@ Raytracer<T>::~Raytracer( )
 }
 
 template <typename T>
-void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -103,22 +105,26 @@ void Raytracer<T>::RunRaytrace( T r_max, T theta_max, TextOutput* outfile, int w
 	//
 	cout << "Running raytracer..." << endl;
 
+	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
 	for(int ray=0; ray<nRays; ray++)
 	{
-		if(m_steps[ray] == -1) return;
-		else if(m_steps[ray] >= STEPLIM) return;
+        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
+	    if(m_steps[ray] == -1) continue;
+		else if(m_steps[ray] >= STEPLIM) continue;
 
 		int n;
-		n = Propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+		n = propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
 		m_steps[ray] += n;
 
 		if(outfile != 0)
 			outfile->newline(2);
 	}
+    prog.done();
 }
 
 template <typename T>
-inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
+inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
 {
 	//
 	// propagate the photon along its geodesic until limiting r or theta reached
@@ -207,8 +213,17 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 		if( step > abs( phi/pphi ) / tolerance ) step = abs( phi/pphi ) / tolerance;
 //		if( step > abs( (phi - M_PI)/pphi ) / tol ) step = abs( (phi - M_PI)/pphi ) / tol;
 //		if( step > abs( (phi - 2*M_PI)/pphi ) / tol ) step = abs( (phi - 2*M_PI)/pphi ) / tol;
+		if( step > abs(max_tstep/pt) ) step = abs(max_tstep / pt);
+		if( step > abs(max_phistep/pphi) ) step = abs(max_phistep / pphi);
 		// don't let the step be stupidly small
 		if( step < MIN_STEP ) step = MIN_STEP;
+
+		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+		if(pt < 0)
+		{
+			m_status[ray] = -2;
+			break;
+		}
 
 		// calculate new position
 		t += pt*step;
@@ -227,7 +242,7 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 				write_started = true;
 				if(write_cartesian)
 				{
-					Cartesian<T>(x, y, z, r, theta, phi, a);
+                    cartesian<T>(x, y, z, r, theta, phi, a);
 					(*outfile) << t << x << y << z << endl;
 				}
 				else
@@ -257,7 +272,7 @@ inline int Raytracer<T>::Propagate(int ray, const T rlim, const T thetalim, cons
 }
 
 template <typename T>
-void Raytracer<T>::RedshiftStart( T V, bool reverse, bool projradius )
+void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 {
 	//
 	// Calculates the initial energy of each ray at emission for use in redshift calculations.
@@ -310,6 +325,8 @@ void Raytracer<T>::RedshiftStart( T V, bool reverse, bool projradius )
 		else if(V == -1)
 			V = 1 / (a + m_r[ray]*sqrt(m_r[ray]));
 
+		// if(reverse) V *= -1;
+
 
 		// timelike basis vector
 		const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
@@ -317,7 +334,8 @@ void Raytracer<T>::RedshiftStart( T V, bool reverse, bool projradius )
 							(1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
 
 		// photon momentum
-		MomentumFromConsts<T>(p[0], p[1], p[2], p[3], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray], m_thetadot_sign[ray], m_r[ray], m_theta[ray], m_phi[ray], spin);
+        momentum_from_consts<T>(p[0], p[1], p[2], p[3], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray],
+                                m_thetadot_sign[ray], m_r[ray], m_theta[ray], m_phi[ray], spin);
 
 		// if we're propagating backwards, reverse the direction of the photon momentum
 		if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
@@ -332,7 +350,7 @@ void Raytracer<T>::RedshiftStart( T V, bool reverse, bool projradius )
 
 
 template <typename T>
-void Raytracer<T>::Redshift( T V, bool reverse, bool projradius, int motion )
+void Raytracer<T>::redshift(T V, bool reverse, bool projradius, int motion )
 {
 	//
 	// Calculates the redshift of the ray (emitted / received energy).
@@ -344,7 +362,7 @@ void Raytracer<T>::Redshift( T V, bool reverse, bool projradius, int motion )
 	// spatial components of the ray's 4-momentum will be reversed so the ray is travelling in the
 	// correct direction wrt the receiving material.
 	//
-	// RedshiftStart( ) needs to have been called before rays were traced. Use this function after
+	// redshift_start( ) needs to have been called before rays were traced. Use this function after
 	// propagation.
 	//
 	// Arguments:
@@ -400,6 +418,8 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 		else if (V == -1)
 			V = 1 / (spin + r * sqrt(r));
 
+		// if(reverse) V = -1;
+
 		// timelike basis vector
 		et[0] = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
 		et[3] = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
@@ -414,7 +434,7 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 	}
 
 	// photon momentum
-	MomentumFromConsts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);
+    momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);
 
 	// if we're propagating backwards, reverse the direction of the photon momentum
 	if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
@@ -430,7 +450,7 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 
 
 template <typename T>
-void Raytracer<T>::RangePhi( T min, T max )
+void Raytracer<T>::range_phi(T min, T max )
 {
 	//
 	// Puts the azimuthal angle co-ordinate (phi) in the required range
@@ -523,7 +543,7 @@ inline void Raytracer<T>::CalculateConstantsFromP(int ray, T pt, T pr, T ptheta,
 
 
 template<typename T>
-void Raytracer<T>::CalculateMomentum( )
+void Raytracer<T>::calculate_momentum( )
 {
 	//
 	// Calculate photon momentum from constants of motion at a location

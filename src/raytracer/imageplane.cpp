@@ -20,7 +20,7 @@ ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy
 	m_plane_y = new T[Raytracer<T>::nRays];
 
 	cout << "Setting up image plane with (" << Nx << 'x' << Ny << ") rays" << endl;
-	InitImagePlane( D, incl*M_PI/180, phi0, x0, xmax, dx, y0, ymax, dy);
+	init_image_plane(D, incl * M_PI / 180, phi0, x0, xmax, dx, y0, ymax, dy);
 }
 
 template <typename T>
@@ -31,7 +31,7 @@ ImagePlane<T>::~ImagePlane()
 }
 
 template <typename T>
-void ImagePlane<T>::InitImagePlane( T D, T incl, T phi0,
+void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
 									T x0, T xmax, T dx,
                                     T y0, T ymax, T dy)
 {
@@ -120,22 +120,22 @@ void ImagePlane<T>::InitImagePlane( T D, T incl, T phi0,
 }
 
 template <typename T>
-void ImagePlane<T>::RedshiftStart( )
+void ImagePlane<T>::redshift_start( )
 {
 	//
-	// Call the RedshiftStart function of the base class using the source's angular velocity
+	// Call the redshift_start function of the base class using the source's angular velocity
 	//
-	Raytracer<T>::RedshiftStart( 0, true );
+    Raytracer<T>::redshift_start(0, true);
 }
 
 template <typename T>
-void ImagePlane<T>::Redshift( bool projradius )
+void ImagePlane<T>::redshift(bool projradius )
 {
 	//
-	// Call the RedshiftStart function of the base class using the angular velocity for a circular orbit at the ray's end point
+	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-	Raytracer<T>::Redshift( -1, true, projradius );
+	Raytracer<T>::redshift(-1, true, projradius);
 }
 
 template class ImagePlane<double>;

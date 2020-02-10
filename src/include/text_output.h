@@ -71,7 +71,7 @@ public:
 		outfile.precision(precision);
 	}
 
-	void Close( )
+	void close( )
 	{
 		outfile.close();
 		open = false;
@@ -79,15 +79,15 @@ public:
 
 	~TextOutput( )
 	{
-		Close( );
+        close();
 	}
 
-	void SetFormat(ios_base::fmtflags format = ios::scientific)
+	void set_format(ios_base::fmtflags format = ios::scientific)
 	{
 		outfile.setf(format);
 	}
 
-	void SetPrecision(int precision = 8)
+	void set_precision(int precision = 8)
 	{
 		outfile.precision(precision);
 	}
