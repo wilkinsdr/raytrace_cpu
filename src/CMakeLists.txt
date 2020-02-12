@@ -17,3 +17,6 @@ target_link_libraries(pointsource_mapper raytracer hdf5_cpp hdf5)
 
 add_executable(healpix_to_disc healpix_to_disc.cpp)
 target_link_libraries(healpix_to_disc healpix_pointsource raytracer)
+
+add_executable(pointsource_to_disc pointsource_to_disc.cpp)
+target_link_libraries(pointsource_to_disc pointsource raytracer)
