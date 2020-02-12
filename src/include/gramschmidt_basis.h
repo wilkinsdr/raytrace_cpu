@@ -24,7 +24,7 @@ private:
 public:
 	GramSchmidt_Basis(T* pos, T* vel, T spin)
 	{
-		Metric(g, pos, spin);
+		kerr_metric(g, pos, spin);
 		orthogonalise(BasisVectors<T>::vectors, pos, vel);
 		normalise();
 	}
