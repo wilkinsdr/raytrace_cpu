@@ -494,16 +494,16 @@ inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
 	const T e10 = (V - omega)*sqrt(e2psi/e2nu) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
 	const T e13 = (1/sqrt(e2nu*e2psi))*(e2nu + V*omega*e2psi - omega*omega*e2psi) / sqrt(e2nu - (V-omega)*(V-omega)*e2psi);
 	//
-	const T e22 = 1/sqrt(rhosq);
+	const T e22 = -1/sqrt(rhosq);
 	//
 	const T e31 = sqrt(delta/rhosq);
 
 	// photon 4-momentum in source frame
-	const T rdotprime[] = { E, E*sin(alpha)*sin(beta), E*sin(alpha)*cos(beta), E*cos(alpha) };
+	const T rdotprime[] = { E, E*sin(alpha)*cos(beta), E*sin(alpha)*sin(beta), E*cos(alpha) };
 
 	const T tdot = rdotprime[0]*et0 + rdotprime[1]*e10;
 	const T phidot = rdotprime[0]*et3 + rdotprime[1]*e13;
-	// const T rdot = rdotprime[3]*e31;
+	 const T rdot = rdotprime[3]*e31;
 	const T thetadot = rdotprime[2]*e22;
 
 	// find the corresponding values of k, h and Q using the geodesic equations
@@ -514,6 +514,9 @@ inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
 	m_h[ray] = m_h[ray] / ( m_r[ray]*m_r[ray] + spin*spin*cos(m_theta[ray])*cos(m_theta[ray]) - 2*m_r[ray] );
 
 	m_Q[ray] = rhosq*rhosq*thetadot*thetadot - (spin*m_k[ray]*cos(m_theta[ray]) + m_h[ray]/tan(m_theta[ray]))*(spin*m_k[ray]*cos(m_theta[ray]) - m_h[ray]/tan(m_theta[ray]));
+
+	m_rdot_sign[ray] = (rdot > 0) ? 1 : -1;
+	m_thetadot_sign[ray] = (thetadot > 0) ? 1 : -1;
 }
 
 template <typename T>

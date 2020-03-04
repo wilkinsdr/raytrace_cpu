@@ -49,8 +49,8 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 
 			const T alpha = acos(m_cosalpha[ix]);
 
-			Raytracer<T>::m_rdot_sign[ix] = (alpha < M_PI/2) ? 1 : -1;
-			Raytracer<T>::m_thetadot_sign[ix] = (abs(m_beta[ix]) < M_PI/2) ? 1 : -1;
+//			Raytracer<T>::m_rdot_sign[ix] = (alpha < M_PI/2) ? 1 : -1;
+//			Raytracer<T>::m_thetadot_sign[ix] = (abs(m_beta[ix]) < M_PI/2) ? 1 : -1;
 
 			// initialise position of photon
 			Raytracer<T>::m_t[ix] = pos[0];
@@ -64,7 +64,6 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 			Raytracer<T>::m_steps[ix] = 0;
 			// calculate constants of motion
 			Raytracer<T>::CalculateConstants(ix, alpha, m_beta[ix], velocity, energy);
-
 		}
 }
 
