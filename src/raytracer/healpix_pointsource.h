@@ -35,6 +35,12 @@ public:
 	    return npix;
     }
 
+    void set_disc_source()
+    {
+		for(int i=0; i<Raytracer<T>::nRays; i++)
+			if(Raytracer<T>::m_thetadot_sign[i] > 0) Raytracer<T>::m_steps[i] = -1;
+    }
+
 };
 
 #endif /* HEALPIX_POINTSOURCE_H_ */
