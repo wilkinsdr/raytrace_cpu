@@ -52,6 +52,9 @@ int main(int argc, char** argv)
 	int show_progress = par_file.get_parameter<int>("show_progress", 1);
 	double r_esc = par_file.get_parameter<double>("r_esc", 1000);
 	double r_disc = par_file.get_parameter<double>("r_esc", 500);
+	bool plane_iso = par_file.get_parameter<bool>("plane_iso", true);
+	bool limb = par_file.get_parameter<bool>("limb", false);
+	bool weight_norm = par_file.get_parameter<bool>("weight_norm", true);
 
 	const double r_isco = kerr_isco<double>(spin, +1);
 
@@ -70,46 +73,47 @@ int main(int argc, char** argv)
 	double this_beta0 = 0;
 	double this_betamax = M_PI;
 
-//	for(int beta_set=0; beta_set<2; beta_set++)
-//	{
-//		double this_beta0 = (beta_set == 0) ? -1*M_PI : M_PI/2;
-//		double this_betamax = (beta_set == 0) ? -1*(M_PI/2) : M_PI;
+	cout << "beta = " << this_beta0 << " to " << this_betamax << endl;
 
-		cout << "beta = " << this_beta0 << " to " << this_betamax << endl;
-
-		PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, this_beta0,
+	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, this_beta0,
 		                                    this_betamax);
 
-//		raytrace_source.redshift_start();
-		raytrace_source.run_raytrace(1.1*r_esc, M_PI_2, show_progress);
-		raytrace_source.range_phi();
+	raytrace_source.redshift_start();
+	raytrace_source.run_raytrace(1.1*r_esc, M_PI_2, show_progress);
+	raytrace_source.range_phi();
 //		raytrace_source.redshift(-1);
 
-		raytrace_source.map_results(steps, t, r, theta, phi, redshift);
+	raytrace_source.map_results(steps, t, r, theta, phi, redshift);
 
-		for (int ray = 0; ray < raytrace_source.get_count(); ray++)
+	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
+	{
+		if (steps[ray] > 0)
 		{
-			if (steps[ray] > 0)
+			double alpha = acos(raytrace_source.ray_cosalpha(ray));
+			double beta = raytrace_source.ray_beta(ray);
+
+			double ray_weight = (plane_iso) ? abs(sin(alpha)*sin(beta)) : 1;
+			if(limb)
+				ray_weight *= 1 + 2.06*(abs(sin(alpha)*sin(beta)));
+
+			ray_count += (weight_norm) ? ray_weight : 1;
+
+			if (theta[ray] >= M_PI_2 && r[ray] >= r_isco && r[ray] < r_disc)
 			{
-				++ray_count;
-
-				if (theta[ray] >= M_PI_2 && r[ray] >= r_isco && r[ray] < r_disc)
-				{
-					if(abs(r[ray] - source_r) > 0.1*source_r || abs(phi[ray] - source_phi) > 0.1)
-						++return_count;
-				}
-				else if(r[ray] > r_esc)
-				{
-					++escape_count;
-				}
-				else
-				{
-					++lost_count;
-				}
+				if(abs(r[ray] - source_r) > 0.1*source_r || abs(phi[ray] - source_phi) > 0.1)
+					return_count += ray_weight;
 			}
-
+			else if(r[ray] > r_esc)
+			{
+				escape_count += ray_weight;
+			}
+			else
+			{
+				lost_count += ray_weight;
+			}
 		}
-	//}
+
+	}
 
 	cout << endl << "Escape: " << escape_count / ray_count << endl;
 	cout << "Return: " << return_count / ray_count << endl;
