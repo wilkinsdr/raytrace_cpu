@@ -33,6 +33,16 @@ public:
 	void redshift_start( );
 	void redshift(T V );
 
+	inline T ray_cosalpha(int ix)
+	{
+		return m_cosalpha[ix];
+	}
+
+	inline T ray_beta(int ix)
+	{
+		return  m_beta[ix];
+	}
+
 };
 
 #endif /* POINTSOURCE_H_ */

@@ -44,7 +44,7 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 			if(m_cosalpha[ix] >= cosalphamax || m_beta[ix] >= betamax)
 			{
 				Raytracer<T>::m_steps[ix] = -1;
-				return;
+				continue;
 			}
 
 			const T alpha = acos(m_cosalpha[ix]);

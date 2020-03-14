@@ -160,6 +160,9 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 
 	bool write_started = false;
 
+	bool rdotsign_unlocked = false;
+	bool thetadotsign_unlocked = false;
+
 	// integrate geodesic equations until limit reached
 	// if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
 	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
@@ -197,13 +200,17 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
 		rdotsq = rdotsq * delta/rhosq;
 
-		if(rdotsq < 0 && rsign_count >= COUNT_MIN)
+		if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
 		{
 			rdot_sign *= -1;
 			rsign_count = 0;
-			continue;
+			//continue;
 		}
-		if (rsign_count <= COUNT_MIN) rsign_count++;
+		else
+		{
+			rsign_count++;
+			rdotsign_unlocked = true;
+		}
 
 		pr = sqrt(abs(rdotsq)) * rdot_sign;
 
@@ -515,8 +522,11 @@ inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
 
 	m_Q[ray] = rhosq*rhosq*thetadot*thetadot - (spin*m_k[ray]*cos(m_theta[ray]) + m_h[ray]/tan(m_theta[ray]))*(spin*m_k[ray]*cos(m_theta[ray]) - m_h[ray]/tan(m_theta[ray]));
 
-	m_rdot_sign[ray] = (rdot > 0) ? 1 : -1;
+	m_rdot_sign[ray] = (rdot >= 0) ? 1 : -1;
 	m_thetadot_sign[ray] = (thetadot > 0) ? 1 : -1;
+
+	//if(abs(rdot) < (1e-2 * e31)) m_steps[ray] = -1;
+//	if(abs(m_r[ray]*phidot/rdot) > 1e3) m_steps[ray] = -1;
 }
 
 template <typename T>
