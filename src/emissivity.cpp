@@ -50,9 +50,9 @@ int main(int argc, char** argv)
     double r_min = (par_args.key_exists("--rmin")) ? par_args.get_parameter<double>("--rmin")
                                                    :  par_file.get_parameter<double>("rmin", -1);
     int Nr = (par_args.key_exists("--Nr")) ? par_args.get_parameter<int>("--Nr")
-                                           : par_file.get_parameter<int>("Nr");
+                                           : par_file.get_parameter<int>("Nr", 100);
     double r_disc = par_file.get_parameter<double>("r_esc", 500);
-    bool logbin_r = par_file.get_parameter<bool>("logbin_r", false);
+    bool logbin_r = par_file.get_parameter<bool>("logbin_r", true);
     double gamma = par_file.get_parameter<double>("gamma", 2);
 
     if (par_args.key_exists("--source_h")) source[1] = par_args.get_parameter<double>("--source_h");
