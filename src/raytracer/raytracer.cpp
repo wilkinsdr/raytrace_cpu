@@ -115,7 +115,7 @@ void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOut
 
 		int n;
 		n = propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-		m_steps[ray] += n;
+		//m_steps[ray] += n;
 
 		if(outfile != 0)
 			outfile->newline(2);
@@ -226,9 +226,10 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		if( step < MIN_STEP ) step = MIN_STEP;
 
 		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
-		if(pt < 0)
+		if(pt <= 0)
 		{
 			m_status[ray] = -2;
+            m_steps[ray] = -1;
 			break;
 		}
 
@@ -274,6 +275,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 	m_pphi[ray] = pphi;
 	m_rdot_sign[ray] = rdot_sign;
 	m_thetadot_sign[ray] = thetadot_sign;
+
+	if(steps > 0) m_steps[ray] += steps;
 
 	return steps;
 }
