@@ -1,6 +1,9 @@
 /*
  * array.h
  *
+ * Template classes to manage allocations of multi-dimensional arrays
+ * in contiguous memory
+ *
  *  Created on: 28 May 2018
  *      Author: drw
  */
@@ -95,6 +98,27 @@ public:
 			ptr[0][i] /= other.ptr[0][i];
 	}
 
+    void operator /= (float other)
+    {
+        for(int i=0; i<num_x*num_y; i++)
+            ptr[0][i] /= other;
+    }
+    void operator /= (double other)
+    {
+        for(int i=0; i<num_x*num_y; i++)
+            ptr[0][i] /= other;
+    }
+    void operator /= (int other)
+    {
+        for(int i=0; i<num_x*num_y; i++)
+            ptr[0][i] /= other;
+    }
+    void operator /= (long other)
+    {
+        for(int i=0; i<num_x*num_y; i++)
+            ptr[0][i] /= other;
+    }
+
 	template<typename T2>
 	void operator += (Array2D<T2>& other)
 	{
@@ -178,6 +202,27 @@ public:
 		for(int i=0; i<num_x*num_y*num_z; i++)
 			pool[i] /= other.pool[i];
 	}
+
+    void operator /= (float other)
+    {
+        for(int i=0; i<num_x*num_y*num_z; i++)
+            pool[i] /= other;
+    }
+    void operator /= (double other)
+    {
+        for(int i=0; i<num_x*num_y*num_z; i++)
+            pool[i] /= other;
+    }
+    void operator /= (int other)
+    {
+        for(int i=0; i<num_x*num_y*num_z; i++)
+            pool[i] /= other;
+    }
+    void operator /= (long other)
+    {
+        for(int i=0; i<num_x*num_y*num_z; i++)
+            pool[i] /= other;
+    }
 
 	void write_hdf(Group* container, const char* name)
 	{
