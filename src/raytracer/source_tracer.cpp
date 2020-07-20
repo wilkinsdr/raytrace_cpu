@@ -9,7 +9,7 @@
 
 template <typename T>
 SourceTracer<T>::SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, T init_t0, T init_tmax, int init_Nt, float toler, bool init_reverse )
-	: Raytracer<T>(num_rays, spin_par, toler), en0(init_en0), enmax(init_enmax), Nen(init_Nen), logbin_en(init_logbin_en), t0(init_t0), tmax(init_tmax), Nt(init_Nt), reverse(init_reverse), mapper(nullptr)
+	: Raytracer<T>(num_rays, spin_par, toler), en0(init_en0), enmax(init_enmax), Nen(init_Nen), logbin_en(init_logbin_en), t0(init_t0), tmax(init_tmax), Nt(init_Nt), reverse(init_reverse)
 {
 	emis = new T*[num_rays];
 	absorb = new T*[num_rays];
@@ -225,33 +225,45 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 				break;
 			}
 
-		if ( (r*r*sin(theta)*sin(theta)*cos(phi)*cos(phi)/(source_size_xy*source_size_xy) + r*r*sin(theta)*sin(theta)*sin(phi)*sin(phi)/(source_size_xy*source_size_xy) + r*r*cos(theta)*cos(theta)/(source_size_z*source_size_z)) < 1 )
+		//if (r>5 && theta > 0.5 && (r*r*sin(theta)*sin(theta)*cos(phi)*cos(phi)/(source_size_xy*source_size_xy) + r*r*sin(theta)*sin(theta)*sin(phi)*sin(phi)/(source_size_xy*source_size_xy) + r*r*cos(theta)*cos(theta)/(source_size_z*source_size_z)) < 1 )
+		if (r > 5 && r < 50 && theta > 0.5 && theta < M_PI_2)
 		{
 			const T len = -1*(grr * dr * dr + gthth * dtheta * dtheta + gphph * dphi * dphi);
-			const T dens = 1;
+			//const T dens = 1./0.02;
 
-			const T energy = 1. / Raytracer<T>::ray_redshift(source_vel, reverse, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<T>::m_emit[ray], source_motion);
+			const T this_v = source_vel * (0.01 + (1-0.01)*(1. - 1./r));
+			const T dens = 1./(r*r*abs(this_v));
+
+			const T energy = 1. / Raytracer<T>::ray_redshift(this_v, reverse, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<T>::m_emit[ray], source_motion);
 			const int ien = (logbin_en) ? static_cast<int>( log(energy / en0) / log(den)) : static_cast<int>((energy - en0) / den);
+
+			//if(energy > 1.15) cout << setw(10) << r << setw(10) << theta << setw(10) << phi << setw(10) << energy << setw(10) << reverse << endl;
 
 			int ir, itheta, iphi;
 
-			if(mapper != nullptr)
-			{
-				ir = (mapper->logbin_r) ? static_cast<int>( log(r / mapper->r0) / log(mapper->dr)) : static_cast<int>((r - mapper->r0) / mapper->dr);
-				itheta = static_cast<int>(theta / mapper->dtheta);
-				iphi = static_cast<int>((phi + M_PI) / mapper->dphi);
+//			if(mapper != nullptr)
+//			{
+//				ir = (mapper->logbin_r) ? static_cast<int>( log(r / mapper->r0) / log(mapper->dr)) : static_cast<int>((r - mapper->r0) / mapper->dr);
+//				itheta = static_cast<int>(theta / mapper->dtheta);
+//				iphi = static_cast<int>((phi + M_PI) / mapper->dphi);
+//
+//				if(ir < 0 || ir >= mapper->Nr || itheta < 0 || itheta > mapper->Ntheta || iphi < 0 || iphi > mapper->Nphi) continue;
+//				if(!(*(mapper->map_Nrays)[ir][itheta][iphi] > 0)) continue;
+//			}
 
-				if(ir < 0 || ir >= mapper->Nr || itheta < 0 || itheta > mapper->Ntheta || iphi < 0 || iphi > mapper->Nphi) continue;
-				if(!(*(mapper->map_Nrays)[ir][itheta][iphi] > 0)) continue;
-			}
+//			const T emissivity = (mapper != nullptr) ? pow(*(mapper->map_redshift)[ir][itheta][iphi], -2) * *(mapper->map_Nrays)[ir][itheta][iphi] / *(mapper->bin_volume)[ir][itheta][iphi] : (1./(r*r));
+//			const T time = (mapper != nullptr) ? t + *(mapper->map_time)[ir][itheta][iphi] : t;
 
-			const T emissivity = (mapper != nullptr) ? pow(*(mapper->map_redshift)[ir][itheta][iphi], -2) * *(mapper->map_Nrays)[ir][itheta][iphi] / *(mapper->bin_volume)[ir][itheta][iphi] : (1./(r*r));
-			const T time = (mapper != nullptr) ? t + *(mapper->map_time)[ir][itheta][iphi] : t;
+            const T emissivity = (1./(r*r));
+            const T time =  t;
+
 			const int it = (t - t0) / dt;
 
-			if(ien >= 0 && ien < Nen)
+			if(ien >= 0 && ien < Nen && len > 0)
 			{
-				emis[ray][ien] += emissivity * len * dens * pow(energy, 3);
+//                cout << setw(10) << ray << setw(10) << ien << setw(10) << exp(-1 * absorb[ray][ien]) << endl;
+
+				emis[ray][ien] += (emissivity * len * dens * pow(energy, 3)) * exp(-1 * absorb[ray][ien]); // N.B. self-absorption
 				absorb[ray][ien] += len * dens;
 				if(it >=0 && it < Nt)
 					emis_ent[ien][it] += emissivity * len * dens * pow(energy, 3);

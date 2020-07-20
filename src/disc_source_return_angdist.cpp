@@ -64,6 +64,7 @@ int main(int argc, char** argv)
 	double *escape_alpha_dist, *escape_beta_dist, *escape_norm_angle_dist, *escape_az_angle_dist;
 	double *return_alpha_dist, *return_beta_dist, *return_norm_angle_dist, *return_az_angle_dist;
 	double *lost_alpha_dist, *lost_beta_dist, *lost_norm_angle_dist, *lost_az_angle_dist;
+	double *total_norm_angle_dist, *total_az_angle_dist;
 
 	escape_alpha_dist = new double[Nangle];
 	escape_beta_dist = new double[Nangle];
@@ -80,6 +81,9 @@ int main(int argc, char** argv)
 	lost_norm_angle_dist = new double[Nangle];
 	lost_az_angle_dist = new double[Nangle];
 	
+	total_norm_angle_dist = new double[Nangle];
+	total_az_angle_dist = new double[Nangle];
+	
 	for(int i=0; i<Nangle; i++)
 	{
 		escape_alpha_dist[i] = 0;
@@ -94,6 +98,8 @@ int main(int argc, char** argv)
 		lost_beta_dist[i] = 0;
 		lost_norm_angle_dist[i] = 0;
 		lost_az_angle_dist[i] = 0;
+		total_norm_angle_dist[i] = 0;
+		total_az_angle_dist[i] = 0;
 	}
 
 	source[0] = 0.;
@@ -116,10 +122,10 @@ int main(int argc, char** argv)
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, this_beta0,
 		                                    this_betamax);
 
-	raytrace_source.redshift_start();
+	//raytrace_source.redshift_start();
 	raytrace_source.run_raytrace(1.1*r_esc, M_PI_2, show_progress);
 	raytrace_source.range_phi();
-    raytrace_source.redshift(-1);
+    //raytrace_source.redshift(-1);
 
 	raytrace_source.map_results(steps, t, r, theta, phi, redshift);
 
@@ -146,22 +152,25 @@ int main(int argc, char** argv)
 				ray_weight *= 1 + 2.06*(abs(sin(alpha)*sin(beta)));
 
 			ray_count += (weight_norm) ? ray_weight : 1;
+			
+			total_norm_angle_dist[norm_angle_bin] += 1; // only 1 here to maintain normalisation, just fix drop-outs
+			total_az_angle_dist[az_angle_bin] += 1;
 
 			if (theta[ray] >= M_PI_2 && r[ray] >= r_isco && r[ray] < r_disc)
 			{
-				if(abs(r[ray] - source_r) > 0.1*source_r || abs(phi[ray] - source_phi) > 0.1)
-				{
+				//if(abs(r[ray] - source_r) > 0.1*source_r || abs(phi[ray] - source_phi) > 0.1)
+				//{
 					return_count += ray_weight;
 					return_alpha_dist[alpha_bin] += ray_weight;
 					return_beta_dist[beta_bin] += ray_weight;
 					return_norm_angle_dist[norm_angle_bin] += ray_weight;
 					return_az_angle_dist[az_angle_bin] += ray_weight;
 
-					if(az_angle > 1.3 && az_angle < 1.7)
-					{
-						cout << "Naughty ray: " << alpha << " " << beta << " " << steps[ray] << " " << r[ray] << " " << theta[ray] << " " << phi[ray] << endl;
-					}
-				}
+//					if(az_angle > 1.3 && az_angle < 1.7)
+//					{
+//						cout << "Naughty ray: " << alpha << " " << beta << " " << steps[ray] << " " << r[ray] << " " << theta[ray] << " " << phi[ray] << endl;
+//					}
+				//}
 
 			}
 			else if(r[ray] > r_esc)
@@ -172,7 +181,7 @@ int main(int argc, char** argv)
 				escape_norm_angle_dist[norm_angle_bin] += ray_weight;
 				escape_az_angle_dist[az_angle_bin] += ray_weight;
 			}
-			else
+			else if(r[ray] < r_isco)
 			{
 				lost_count += ray_weight;
 				lost_alpha_dist[alpha_bin] += ray_weight;
@@ -180,9 +189,24 @@ int main(int argc, char** argv)
 				lost_norm_angle_dist[norm_angle_bin] += ray_weight;
 				lost_az_angle_dist[az_angle_bin] += ray_weight;
 			}
+            else
+            {
+				cout << "Naughty ray: " << alpha << " " << beta << " " << steps[ray] << " " << r[ray] << " " << theta[ray] << " " << phi[ray] << endl;
+            }
 		}
 
 	}
+	
+	for(int i=0; i<Nangle; i++)
+    {
+	    double az_dist_sum = escape_az_angle_dist[i] +
+                                return_az_angle_dist[i] +
+                                    lost_az_angle_dist[i];
+
+        escape_az_angle_dist[i] /= az_dist_sum;
+        return_az_angle_dist[i] /= az_dist_sum;
+        lost_az_angle_dist[i] /= az_dist_sum;
+    }
 
 	cout << endl << "Escape: " << escape_count / ray_count << endl;
 	cout << "Return: " << return_count / ray_count << endl;

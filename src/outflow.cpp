@@ -26,6 +26,8 @@ bool pointsource_stop(double t, double r, double theta, double phi, double* args
 
 	if( (x*x + y*y + (z-h)*(z-h)) < rad ) return true;
 
+	//if(r < 2) return true;
+
 	return false;
 }
 
@@ -108,8 +110,9 @@ int main(int argc, char** argv)
 	int *ray_steps;
     RaytraceSource->map_results(ray_steps, ray_t, ray_r, ray_theta, ray_phi, ray_redshift);
 
-	double *obs_continuum;
+	double *obs_continuum, *total_absorb;
 	obs_continuum = new double[RaytraceSource->Nen];
+    total_absorb = new double[RaytraceSource->Nen];
 	double max_tau = 0;
 
 	int pointsource_count = 0;
@@ -125,15 +128,25 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+
+	cout << "max tau = " << max_tau << endl;
 	for(int ray=0; ray< RaytraceSource->get_count(); ray++)
 	{
 		if(ray_status[ray] == 2)
 		{
 			for(int ien=0; ien<RaytraceSource->Nen; ien++)
 			{
-				obs_continuum[ien] += exp(-1 * RaytraceSource->absorb[ray][ien]*(tau/max_tau));
+				if(RaytraceSource->absorb[ray][ien] >= 0) obs_continuum[ien] += exp(-1 * RaytraceSource->absorb[ray][ien]*(tau/max_tau));
+				total_absorb[ien] += RaytraceSource->absorb[ray][ien]*(tau/max_tau);
 			}
 		}
+//		else
+//        {
+//            for(int ien = 0; ien < Nen; ien++)
+//            {
+//                emis[ien] += RaytraceSource->emis[ray][ien];
+//            }
+//        }
 	}
 
 	cout << pointsource_count << " rays reached pointsource" << endl;
@@ -141,7 +154,7 @@ int main(int argc, char** argv)
 	TextOutput outfile((const char*)out_filename.c_str());
 	for(int ien=0; ien<Nen; ien++)
 	{
-		outfile << RaytraceSource->energy[ien] << emis[ien] << obs_continuum[ien] << endl;
+		outfile << RaytraceSource->energy[ien] << emis[ien] << obs_continuum[ien] << total_absorb[ien] << endl;
 	}
     outfile.close();
 

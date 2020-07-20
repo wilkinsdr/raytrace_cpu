@@ -123,6 +123,19 @@ public:
     	p_phi = m_phi;
     	p_redshift = m_redshift;
     }
+    void map_results(int*& p_steps, T*& p_t, T*& p_r, T*& p_theta, T*& p_phi, T*& p_redshift, int* p_status )
+    {
+        //
+        // Maps the pointers to the raytrace variable arrays for access by external code
+        //
+        p_steps = m_steps;
+        p_t = m_t;
+        p_r = m_r;
+        p_theta = m_theta;
+        p_phi = m_phi;
+        p_redshift = m_redshift;
+        p_status = m_status;
+    }
     void map_momentum(T*& p_pt, T*& p_pr, T*& p_ptheta, T*& p_pphi )
     {
     	//

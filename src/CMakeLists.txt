@@ -24,8 +24,14 @@ target_link_libraries(pointsource_to_disc pointsource raytracer)
 add_executable(disc_source_photonfrac disc_source_photonfrac.cpp)
 target_link_libraries(disc_source_photonfrac pointsource raytracer)
 
+add_executable(disc_source_photonfrac_r disc_source_photonfrac_r.cpp)
+target_link_libraries(disc_source_photonfrac_r pointsource raytracer)
+
 add_executable(disc_source_return_angdist disc_source_return_angdist.cpp)
 target_link_libraries(disc_source_return_angdist pointsource raytracer)
 
 add_executable(healpix_disc_source_photonfrac healpix_disc_source_photonfrac.cpp)
 target_link_libraries(healpix_disc_source_photonfrac healpix_pointsource raytracer)
+
+add_executable(emissivity emissivity.cpp)
+target_link_libraries(emissivity pointsource raytracer)

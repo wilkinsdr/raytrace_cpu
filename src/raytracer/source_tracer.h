@@ -25,7 +25,7 @@ using namespace std;
 #include "../include/text_output.h"
 #include "../include/progress_bar.h"
 #include "raytracer.h"
-#include "mapper.h"
+//#include "mapper.h"
 
 
 template <typename T>
@@ -39,10 +39,11 @@ private:
 
 	bool stopping_fn_set;
 	//bool (*stopping_fn)(T, T, T, T, T*);
-	function<bool(T, T, T, T, T*)> stopping_fn;
+	//function<bool(T, T, T, T, T*)> stopping_fn;
+	bool (*stopping_fn)(T, T, T, T, T*);
 	T *stopping_args;
 
-	Mapper<T> *mapper;
+	//Mapper *mapper;
 
 public:
     SourceTracer( int num_rays, float spin_par, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en = false, T init_t0 = 0, T init_tmax = 1E6, int init_Nt = 1, float toler = TOL, bool reverse = false );
@@ -66,17 +67,24 @@ public:
 		source_vel = vel;
 	}
 
-	void set_stopping_fn(function<bool(T, T, T, T, T*)> fn, T* args)
-	{
-		stopping_fn = fn;
-		stopping_fn_set = true;
-		stopping_args = args;
-	}
+//	void set_stopping_fn(function<bool(T, T, T, T, T*)> fn, T* args)
+//	{
+//		stopping_fn = fn;
+//		stopping_fn_set = true;
+//		stopping_args = args;
+//	}
 
-	void add_mapper(Mapper<T>* map_ptr)
-	{
-		mapper = map_ptr;
-	}
+    void set_stopping_fn(bool (*fn)(T, T, T, T, T*), T* args)
+    {
+        stopping_fn = fn;
+        stopping_fn_set = true;
+        stopping_args = args;
+    }
+
+//	void add_mapper(Mapper* map_ptr)
+//	{
+//		mapper = map_ptr;
+//	}
 };
 
 #endif /* SOURCETRACER_H_ */

@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 	raytrace_source.redshift_start();
 	raytrace_source.run_raytrace(1.1*r_esc, M_PI_2, show_progress);
 	raytrace_source.range_phi();
-//		raytrace_source.redshift(-1);
+	raytrace_source.redshift(-1);
 
 	raytrace_source.map_results(steps, t, r, theta, phi, redshift);
 
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 			{
 				escape_count += ray_weight;
 			}
-			else
+			else if(r[ray] < r_isco)
 			{
 				lost_count += ray_weight;
 			}
