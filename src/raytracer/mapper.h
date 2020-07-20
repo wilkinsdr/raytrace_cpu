@@ -37,7 +37,11 @@ private:
 
 	bool reverse;
 
-
+    virtual long get_num_rays()
+    {
+        cerr << "I'm supposed to be overriden!" << endl;
+        return 0;
+    }
 
 public:
     Mapper(int num_rays, float spin_par, double init_r0, double init_rmax, int init_Nr, int init_Ntheta, int init_Nphi, bool init_logbin_r, double init_thetamax = M_PI_2, float toler = TOL, bool reverse = false);

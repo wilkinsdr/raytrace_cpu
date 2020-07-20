@@ -31,6 +31,11 @@ public:
 	void RedshiftStart( );
 	void Redshift( double V );
 
+	long get_num_rays()
+    {
+	    return n_cosalpha * n_beta;
+    }
+
 };
 
 #endif /* MAPPER_POINTSOURCE_H_ */

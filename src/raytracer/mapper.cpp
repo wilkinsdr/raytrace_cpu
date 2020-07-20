@@ -297,8 +297,10 @@ void Mapper::save(char* filename)
 
 void Mapper::average_rays()
 {
+	long num_rays = get_num_rays();
 	(*map_time) /= (*map_Nrays);
 	(*map_redshift) /= (*map_Nrays);
+    (*map_Nrays) /= num_rays;
 }
 
 
