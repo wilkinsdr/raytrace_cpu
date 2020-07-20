@@ -37,6 +37,8 @@ private:
 
 	bool reverse;
 
+	long num_rays;
+
     virtual long get_num_rays()
     {
         cerr << "I'm supposed to be overriden!" << endl;

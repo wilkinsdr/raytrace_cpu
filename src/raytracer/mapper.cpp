@@ -38,6 +38,7 @@ Mapper::Mapper(char* load_filename) : Raytracer<double>(1, 0)
 	infile.read(reinterpret_cast<char *> (&theta_max), sizeof(double));
 	infile.read(reinterpret_cast<char *> (&Ntheta), sizeof(int));
 	infile.read(reinterpret_cast<char *> (&Nphi), sizeof(int));
+    infile.read(reinterpret_cast<char *> (&num_rays), sizeof(long));
 
 	bin_dr = (logbin_r) ? exp(log(rmax/r0)/(Nr-1)) : (rmax - r0)/(Nr - 1);
 	bin_dtheta = (M_PI_2)/(Ntheta - 1);
@@ -80,6 +81,8 @@ void Mapper::run_map( double r_max, int show_progress )
 	//	r_max		double		Limiting outer radius for propagation in Rg (default value = 1000)
 	//
 	cout << "Running mapper..." << endl;
+
+	num_rays = get_num_rays();
 
 	ProgressBar prog(Raytracer<double>::nRays, "Ray", 0, (show_progress > 0));
 	show_progress = abs(show_progress);
@@ -286,6 +289,7 @@ void Mapper::save(char* filename)
 	outfile.write(reinterpret_cast<char *> (&theta_max), sizeof(double));
 	outfile.write(reinterpret_cast<char *> (&Ntheta), sizeof(int));
 	outfile.write(reinterpret_cast<char *> (&Nphi), sizeof(int));
+    outfile.write(reinterpret_cast<char *> (&num_rays), sizeof(long));
 
 	map_time->write(&outfile);
 	map_redshift->write(&outfile);
@@ -297,10 +301,8 @@ void Mapper::save(char* filename)
 
 void Mapper::average_rays()
 {
-	long num_rays = get_num_rays();
 	(*map_time) /= (*map_Nrays);
 	(*map_redshift) /= (*map_Nrays);
-    (*map_Nrays) /= num_rays;
 }
 
 
