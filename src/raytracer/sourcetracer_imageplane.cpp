@@ -9,7 +9,7 @@
 
 template <typename T>
 SourceTracer_ImagePlane<T>::SourceTracer_ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, T tol, T phi )
-	: SourceTracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , init_en0, init_enmax, init_Nen, init_logbin_en, tol, true ),
+	: SourceTracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , init_en0, init_enmax, init_Nen, init_logbin_en, 0, 1e-6, 1, tol, true ),
 	        Nx(((xmax - x0) / dx) + 1),
 	        Ny(((ymax - y0) / dy) + 1),
 	        D(dist),

@@ -447,7 +447,10 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
     momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);
 
 	// if we're propagating backwards, reverse the direction of the photon momentum
-	if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
+	if(reverse)
+	{
+	    p[1] *= -1; p[2] *= -1; p[3] *= -1;
+	}
 
 	// evaluate dot product to get energy
 	T recv = 0;
