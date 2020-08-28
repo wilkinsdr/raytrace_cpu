@@ -253,7 +253,7 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 				else
 					V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 
-				redshift = Raytracer<double>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
+				redshift = Raytracer<double>::ray_redshift(V, reverse, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
 				if(redshift > 0 && isfinite(redshift))
 				{
 					(*map_time)[ir][itheta][iphi] += t;

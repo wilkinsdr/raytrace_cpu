@@ -11,7 +11,7 @@
 #include <cmath>
 using namespace std;
 
-#include "raytracer/sourcetracer_imageplane.h"
+#include "sourcetracer/sourcetracer_imageplane.h"
 #include "include/par_file.h"
 
 int main(int argc, char** argv)

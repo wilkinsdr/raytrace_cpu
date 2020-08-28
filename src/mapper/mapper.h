@@ -22,7 +22,7 @@ using namespace std;
 
 #include "../include/kerr.h"
 #include "../include/array.h"
-#include "raytracer.h"
+#include "../raytracer/raytracer.h"
 #include "../include/progress_bar.h"
 
 #include "H5Cpp.h"
@@ -36,8 +36,6 @@ private:
 	double vel;
 
 	bool reverse;
-
-	long num_rays;
 
     virtual long get_num_rays()
     {
@@ -54,6 +52,8 @@ public:
 	int Nr, Ntheta, Nphi;
 	double bin_dr, bin_dtheta, bin_dphi;
 	bool logbin_r;
+
+    long num_rays;
 
 	Array3D<double> *map_time, *map_redshift, *map_flux;
 	Array3D<int> *map_Nrays;

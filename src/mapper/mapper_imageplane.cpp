@@ -5,11 +5,11 @@
  *      Author: drw
  */
 
-#include "sourcetracer_imageplane.h"
+#include "mapper_imageplane.h"
 
 template <typename T>
-SourceTracer_ImagePlane<T>::SourceTracer_ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, T tol, T phi )
-	: SourceTracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , init_en0, init_enmax, init_Nen, init_logbin_en, 0, 1e-6, 1, tol, true ),
+Mapper_ImagePlane<T>::Mapper_ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T init_en0, T init_enmax, int init_Nen, bool init_logbin_en, T tol, T phi )
+	: Mapper<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , init_en0, init_enmax, init_Nen, init_logbin_en, 0, 1e-6, 1, tol, true ),
 	        Nx(((xmax - x0) / dx) + 1),
 	        Ny(((ymax - y0) / dy) + 1),
 	        D(dist),
@@ -20,18 +20,18 @@ SourceTracer_ImagePlane<T>::SourceTracer_ImagePlane( T dist, T inc, T x0, T xmax
 	m_plane_y = new T[Raytracer<T>::nRays];
 
 	cout << "Setting up image plane with (" << Nx << 'x' << Ny << ") rays" << endl;
-	InitImagePlane( D, incl*M_PI/180, phi0, x0, xmax, dx, y0, ymax, dy);
+	init_image_plane( D, incl*M_PI/180, phi0, x0, xmax, dx, y0, ymax, dy);
 }
 
 template <typename T>
-SourceTracer_ImagePlane<T>::~SourceTracer_ImagePlane()
+Mapper_ImagePlane<T>::~Mapper_ImagePlane()
 {
 	delete[] m_plane_x;
 	delete[] m_plane_y;
 }
 
 template <typename T>
-void SourceTracer_ImagePlane<T>::InitImagePlane( T D, T incl, T phi0,
+void Mapper_ImagePlane<T>::init_image_plane( T D, T incl, T phi0,
 									T x0, T xmax, T dx,
                                     T y0, T ymax, T dy)
 {
@@ -120,7 +120,7 @@ void SourceTracer_ImagePlane<T>::InitImagePlane( T D, T incl, T phi0,
 }
 
 template <typename T>
-void SourceTracer_ImagePlane<T>::RedshiftStart( )
+void Mapper_ImagePlane<T>::redshift_start( )
 {
 	//
 	// Call the redshift_start function of the base class using the source's angular velocity
@@ -129,7 +129,7 @@ void SourceTracer_ImagePlane<T>::RedshiftStart( )
 }
 
 template <typename T>
-void SourceTracer_ImagePlane<T>::Redshift( bool projradius )
+void Mapper_ImagePlane<T>::redshift( bool projradius )
 {
 	//
 	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
@@ -138,5 +138,5 @@ void SourceTracer_ImagePlane<T>::Redshift( bool projradius )
     Raytracer<T>::redshift(-1, true, projradius);
 }
 
-template class SourceTracer_ImagePlane<double>;
-template class SourceTracer_ImagePlane<float>;
+template class Mapper_ImagePlane<double>;
+template class Mapper_ImagePlane<float>;

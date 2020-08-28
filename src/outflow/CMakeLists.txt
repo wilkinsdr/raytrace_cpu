@@ -1,17 +1,4 @@
-include_directories("raytracer")
-add_subdirectory (raytracer)
 
-include_directories("source_tracer")
-add_subdirectory (source_tracer)
-
-include_directories("mapper")
-add_subdirectory (mapper)
-
-add_executable(trace_rays trace_rays.cpp)
-target_link_libraries(trace_rays pointsource raytracer)
-
-add_executable(trace_rays_imageplane trace_rays_imageplane.cpp)
-target_link_libraries(trace_rays_imageplane imageplane raytracer)
 
 add_executable(outflow outflow/outflow.cpp)
 target_link_libraries(outflow sourcetracer_imageplane source_tracer raytracer)
