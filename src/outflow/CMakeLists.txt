@@ -1,33 +1,15 @@
 
-
-add_executable(outflow outflow/outflow.cpp)
+add_executable(outflow outflow.cpp)
 target_link_libraries(outflow sourcetracer_imageplane source_tracer raytracer)
 
-add_executable(outflow_spectrum outflow/outflow_spectrum.cpp)
+add_executable(outflow_spectrum outflow_spectrum.cpp)
 target_link_libraries(outflow_spectrum sourcetracer_imageplane source_tracer raytracer)
 
-add_executable(pcyg outflow/pcyg.cpp)
+add_executable(outflow_emis_bin outflow_emis_bin.cpp)
+target_link_libraries(outflow_emis_bin mapper_imageplane mapper raytracer)
 
-add_executable(pointsource_mapper outflow/pointsource_mapper.cpp mapper/mapper_pointsource.cpp mapper/mapper.cpp)
-target_link_libraries(pointsource_mapper raytracer hdf5_cpp hdf5)
+add_executable(pcyg pcyg.cpp)
 
-add_executable(healpix_to_disc healpix_to_disc.cpp)
-target_link_libraries(healpix_to_disc healpix_pointsource raytracer)
+add_executable(pointsource_mapper pointsource_mapper.cpp)
+target_link_libraries(pointsource_mapper mapper_pointsource mapper raytracer hdf5_cpp hdf5)
 
-add_executable(pointsource_to_disc pointsource_to_disc.cpp)
-target_link_libraries(pointsource_to_disc pointsource raytracer)
-
-add_executable(disc_source_photonfrac disc_source_photonfrac.cpp)
-target_link_libraries(disc_source_photonfrac pointsource raytracer)
-
-add_executable(disc_source_photonfrac_r disc_source_photonfrac_r.cpp)
-target_link_libraries(disc_source_photonfrac_r pointsource raytracer)
-
-add_executable(disc_source_return_angdist disc_source_return_angdist.cpp)
-target_link_libraries(disc_source_return_angdist pointsource raytracer)
-
-add_executable(healpix_disc_source_photonfrac healpix_disc_source_photonfrac.cpp)
-target_link_libraries(healpix_disc_source_photonfrac healpix_pointsource raytracer)
-
-add_executable(emissivity emissivity.cpp)
-target_link_libraries(emissivity pointsource raytracer)

@@ -15,6 +15,8 @@ Mapper::Mapper( int num_rays, float spin_par, double init_r0, double init_rmax, 
 	bin_dtheta = (M_PI_2)/(Ntheta - 1);
 	bin_dphi = (2*M_PI)/(Nphi - 1);
 
+	cout << "Allocating maps with dimension " << Nr << "x" << Ntheta << "x" << Nphi << endl;
+
 	map_time = new Array3D<double>(Nr, Ntheta, Nphi);
 	map_redshift = new Array3D<double>(Nr, Ntheta, Nphi);
 	map_Nrays = new Array3D<int>(Nr, Ntheta, Nphi);

@@ -7,22 +7,14 @@ add_subdirectory (source_tracer)
 include_directories("mapper")
 add_subdirectory (mapper)
 
+include_directories("outflow")
+add_subdirectory (outflow)
+
 add_executable(trace_rays trace_rays.cpp)
 target_link_libraries(trace_rays pointsource raytracer)
 
 add_executable(trace_rays_imageplane trace_rays_imageplane.cpp)
 target_link_libraries(trace_rays_imageplane imageplane raytracer)
-
-add_executable(outflow outflow/outflow.cpp)
-target_link_libraries(outflow sourcetracer_imageplane source_tracer raytracer)
-
-add_executable(outflow_spectrum outflow/outflow_spectrum.cpp)
-target_link_libraries(outflow_spectrum sourcetracer_imageplane source_tracer raytracer)
-
-add_executable(pcyg outflow/pcyg.cpp)
-
-add_executable(pointsource_mapper outflow/pointsource_mapper.cpp mapper/mapper_pointsource.cpp mapper/mapper.cpp)
-target_link_libraries(pointsource_mapper raytracer hdf5_cpp hdf5)
 
 add_executable(healpix_to_disc healpix_to_disc.cpp)
 target_link_libraries(healpix_to_disc healpix_pointsource raytracer)

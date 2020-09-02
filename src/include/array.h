@@ -160,6 +160,11 @@ public:
 		delete[] ptr;
 	}
 
+	T& elem(int i, int j, int k)
+    {
+	    return ptr[i][j][k];
+    }
+
 	T** operator [] (int i)
 	{
 		return ptr[i];
