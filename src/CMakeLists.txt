@@ -36,3 +36,9 @@ target_link_libraries(healpix_disc_source_photonfrac healpix_pointsource raytrac
 
 add_executable(emissivity emissivity.cpp)
 target_link_libraries(emissivity pointsource raytracer)
+
+add_executable(gsl_test gsl_test.cpp)
+target_link_libraries(gsl_test GSL::gsl)
+
+add_executable(pcyg_sei pcyg_sei.cpp)
+target_link_libraries(pcyg_sei GSL::gsl)
