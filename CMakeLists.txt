@@ -7,6 +7,9 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/obj)
 
 include(CMakeLocal.txt)
 
+find_package(GSL REQUIRED)
+include_directories(${GSL_INCLUDE_DIRS})
+
 include_directories("${CMAKE_SOURCE_DIR}/src")
 add_subdirectory (src)
 
@@ -18,3 +21,7 @@ set(hdf5 hdf5)
 set(hdf5_cpp hdf5_cpp)
 set(hdf5_libs hdf5_cpp hdf5)
 
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+    message(STATUS "dir='${dir}'")
+endforeach()
