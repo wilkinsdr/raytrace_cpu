@@ -29,6 +29,8 @@ struct pcyg_params
     double rout;
     double T;
     double turb;
+    bool continuum;
+    bool line_emis;
 
     // the following are for passing dummy variables to GSL functions
     double r;
@@ -54,13 +56,19 @@ inline double tau0(double r, pcyg_params* params)
     // radial component of the optical depth
     //
     const double w = params->w0 + (1. - params->w0) * pow(1. - 1./r, params->beta);
-    const double dens = (0.01 * params->rout * params->rout) / (r*r*w);
-//    return params->k * dens * r / (params->vinf * w);
+//    const double dens = (0.01 * params->rout * params->rout) / (r*r*w);
+//    //return params->k * dens * r / (params->vinf * w);
 //    return params->k * r / (params->vinf * w);
+
+
 
     const double dwdr = params->beta * (1. - params->w0) * pow(1. - 1. / r, params->beta - 1.) / (r * r);
     const double tau1 = params->T * (params->beta + 1.) * pow(1. - params->w0, -1 - params->beta) * pow(1. - w, params->gamma);
-    return tau1 * r * dwdr / w;
+
+    return params->T * pow(w, params->gamma) * pow(1. - w, params->gamma) * r * dwdr / w;
+
+    //return tau1 * r * dwdr / w;
+    return tau1;
 }
 
 double escape_integrand(double mu, void* p)
@@ -170,7 +178,11 @@ double find_los_z(double wmu, double p, pcyg_params* params)
 double source_func(double r, pcyg_params* params)
 {
 //    return 0;
-    return continuum_penetration_prob(r, params)/escape_prob(r, params);
+    if(params->line_emis && r > 1)
+        return 0.5*(1. - sqrt(1. - 1./(r*r)));
+      //return continuum_penetration_prob(r, params)/escape_prob(r, params);
+    else
+        return 0;
 //    return 0.5*(1. - sqrt(1. - 1./(r*r)));
 //      return 0;
 }
@@ -185,91 +197,143 @@ double tau(double z, void* par)
     pcyg_params* params = (pcyg_params*) par;
     const double p = params->p;
 
-    const double z0 = find_los_z(params->v, p, params);
-    const double mu = z0/sqrt(p*p + z0*z0);
+    // find the integrand at the peak of the line profile if line profile is narrow
+    // if the velocity is outside the wind, set the location to the edge
+    const double los_z = find_los_z(params->v, p, params);
+    const double z0 = isnan(los_z) ?
+                      ((params->v < -0.5) ?
+                            -1 * sqrt(params->rout*params->rout - p*p) :
+                            ((p >= 1 && params->v > 0.5) ? sqrt(params->rout*params->rout - p*p) : -1 * sqrt(1 - p*p)))
+                 : los_z;
+
+    const double mu = z0 / sqrt(p*p + z0*z0);
     const double r = sqrt(p*p + z0*z0);
-
-    const double w = params->w0 + (1. - params->w0) * pow(1. - 1./r, params->beta);
-    const double dwdr = params->beta * (1. - params->w0) * pow(1. - 1. / r, params->beta - 1.) / (r * r);
     const double s = sigma(sqrt(p*p + z0*z0), params);
+
+    const double w = params->w0 + (1. - params->w0) * pow(1. - 1./sqrt((params->p)*(params->p) + z0*z0), params->beta);
     const double dwzdz = (1 + mu*mu*s) * w / r;
 
-//    const double profile = (1./sqrt(M_PI)) * abs(gsl_sf_erf((mu*w - params->v)/params->turb) - gsl_sf_erf((-1 - params->v)/params->turb));
-//    return profile * tau0(sqrt(p*p + z0*z0), params) / (1. + sigma(p*p + z0*z0, params)*mu*mu);
+    if(params->turb > 0)
+    {
+        // los velocities at the beginning and end of the integration
+        const double r_in = sqrt(p * p + z * z);
+        const double mu_in = z / sqrt(p * p + z * z);
+        const double w_in = params->w0 + (1. - params->w0) * pow(1. - 1. / r_in, params->beta);
+        const double w_out = params->w0 + (1. - params->w0) * pow(1. - 1. / params->rout, params->beta);
+        const double mu_out = -1 * sqrt(params->rout * params->rout - p * p) / params->rout;
 
-    if(z >= z0) // don't reabsorb yourself!
-        //return tau0(sqrt(p*p + z0*z0), params) / (1. + sigma(p*p + z0*z0, params)*mu*mu);
-        return tau0(sqrt(p*p + z0*z0), params) / (1. + sigma(p*p + z0*z0, params)*mu*mu);
+        // integration over Gaussian line profile to include turbulence
+        const double profile = 0.5 * (gsl_sf_erf((w_in * mu_in - params->v) / params->turb) -
+                                         gsl_sf_erf((w_out * mu_out - params->v) / params->turb));
+//        const double profile = 0.5 * (gsl_sf_erf((params->v - -1 * mu_out) / params->turb) -
+//                                      gsl_sf_erf((params->v - w_in*mu_in) / params->turb));
+
+//        cout << 0.5 * (gsl_sf_erf((w_in * mu_in - -0.01) / params->turb) -
+//                       gsl_sf_erf((-1 * mu_out - -0.01) / params->turb))
+//                       << " " <<
+//                              0.5 * (gsl_sf_erf((w_in * mu_in - 0.01) / params->turb) -
+//                                     gsl_sf_erf((-1 * mu_out - 0.01) / params->turb))
+//                                     <<endl;
+
+        //return tau0(sqrt(p * p + z0 * z0), params) / (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+
+ //        return sigma(p * p + z0 * z0, params)*mu*mu;
+//       return profile * tau0(sqrt(p * p + z0 * z0), params) / (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+//        return 1./ (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+//        return tau0(sqrt(p * p + z0 * z0), params);
+
+ //       return profile;
+        //return z0;
+        return profile * tau0(sqrt(p * p + z0 * z0), params) / (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+        //return tau0(sqrt(p * p + z0 * z0), params) / (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+    }
     else
-        return 0;
-}
-
-double tau_integrand(double z, void* par)
-{
-    //
-    // optical depth to photons leaving position (p,z) in cloud
-    // in Sobolev approximation (steep velocity gradient), resonance line photons are
-    // only re-emitted close to their emission point, according to velocity gradient
-    //
-    pcyg_params* params = (pcyg_params*) par;
-    const double p = params->p;
-    const double mu = z/sqrt(p*p + z*z);
-    const double r = sqrt(p*p + z*z);
-
-    const double w = params->w0 + (1. - params->w0) * pow(1. - 1./sqrt((params->p)*(params->p) + z*z), params->beta);
-    const double dwdr = params->beta * (1. - params->w0) * pow(1. - 1. / r, params->beta - 1.) / (r * r);
-    const double s = sigma(sqrt(p*p + z*z), params);
-    const double dwzdz = (1 + mu*mu*s) * w / r;
-
-    const double delta_w = mu*w - params->v;
-    const double phi = (1./sqrt(M_PI)) * (1./params->turb) * exp(-1 * (delta_w / params->turb)*(delta_w / params->turb));
-
-    return tau0(r, params) * phi * dwzdz / (1. + s*mu*mu);
-}
-
-double integrate_tau(double wmu, double zstop, pcyg_params* params)
-{
-    //
-    // continuum photon penetration probability to radius r in wind
-    // for use in source function
-    //
-    double result, error;
-
-    params->v = wmu;
-
-    gsl_function tau_func;
-    tau_func.function = &tau_integrand;
-    tau_func.params = params;
-
-    gsl_integration_qags(&tau_func, -1*params->rout, zstop, 0, 1e-7, 1000, integration_workspace, &result, &error);
-
-    return result;
+    {
+        // if no turbulence, then the profile is a delta function
+        if(z > z0) // don't reabsorb yourself!
+            //return tau0(sqrt(p*p + z0*z0), params) / (1. + sigma(p*p + z0*z0, params)*mu*mu);
+            return tau0(sqrt(p * p + z0 * z0), params) / (1. + sigma(p * p + z0 * z0, params) * mu * mu);
+        else
+            return 0;
+    }
 }
 
 double flux_integrand(double p, void* par)
 {
     pcyg_params *params = (pcyg_params*) par;
 
-    const double z = find_los_z(params->v, p, params);
-    //cout << "z = " << z << " for wmu = " << params->v << endl;
+    // find the integrand at the peak of the line profile if line profile is narrow
+    // if the velocity is outside the wind, set the location to the edge
+    const double los_z = find_los_z(params->v, p, params);
+    const double z0 = isnan(los_z) ?
+                      ((params->v < -0.5) ?
+                       -1 * sqrt(params->rout*params->rout - p*p) :
+                       ((p >= 1 && params->v > 0.5) ? sqrt(params->rout*params->rout - p*p) : -1.1 * sqrt(1 - p*p)))
+                                   : los_z;
+
+    const double mu = z0 / sqrt(p*p + z0*z0);
 
     params->p = p;
 
-    const double r = sqrt(p*p + z*z);
-    const double mu = z / sqrt(p*p + z*z);
-    const double s = sigma(sqrt(p*p + z*z), params);
+    const double r = sqrt(p*p + z0*z0);
+    const double s = sigma(sqrt(p*p + z0*z0), params);
 
-    const double this_tau = tau(z, params);;
-    const double tau_star = tau(sqrt(1. - p*p), params);
-    if(p < 1)
+    const double w = params->w0 + (1. - params->w0) * pow(1. - 1./sqrt((params->p)*(params->p) + z0*z0), params->beta);
+    const double dwzdz = (1 + mu*mu*s) * w / r;
+
+    const double tau_star = tau(-1 * sqrt(1. - p*p), params);
+    const double this_tau = (p<1) ? tau_star : tau(params->rout, params);
+
+    if(params->turb > 0)
     {
-        if(isnan(z)) return 2*p;
-        return 2 * p * (source_func(r, params) * exp(-1 * this_tau) * tau0(r, params) / (1. + s*mu*mu) + exp(-1 * tau_star));
+        // los velocities at the beginning and end of the integration
+        const double r_in = (p < 1) ? 1. : params->rout;
+        const double mu_in = (p < 1) ? -1 * sqrt(1. - p*p) : sqrt(params->rout * params->rout - p * p) / params->rout;
+        const double w_in = (p < 1) ? params->w0 : 1;
+        const double mu_out = -1 * sqrt(params->rout * params->rout - p * p) / params->rout;
+
+        // integration over Gaussian line profile to include turbulence
+        const double profile = 0.5 * (gsl_sf_erf((w_in * mu_in - params->v) / params->turb) -
+                                         gsl_sf_erf((mu_out - params->v) / params->turb));
+//        const double profile = 0.5 * (gsl_sf_erf((params->v - -1 * mu_out) / params->turb) -
+//                                         gsl_sf_erf((params->v - w_in*mu_in) / params->turb));
+
+
+
+//        const double source = (1. - exp( -1 * profile * tau0(r, params) / (1. + s * mu * mu)))
+//                              * source_func(r, params);
+
+  //      return source_func(r, params) * (1. - exp(-1 * this_tau));
+
+        const double source = source_func(r, params) * (1. - exp(-1 * this_tau));
+
+  //      return dwzdz;
+
+        //return (1. - exp( -1 * profile * tau0(r, params) / (1. + s * mu * mu)));
+
+        //return profile * tau0(r, params) / (1. + s * mu * mu);
+
+        if(p < 1 && params->continuum)
+        {
+            return 2 * p * (source + exp(-1 * tau_star));
+        }
+        else
+        {
+            return 2 * p * source;
+        }
     }
     else
     {
-        if(isnan(z)) return 0;
-        return 2 * p * (source_func(r, params) * exp(-1 * this_tau) * tau0(r, params) / (1. + s*mu*mu));
+        if(p < 1 && params->continuum)
+        {
+            if(isnan(z0) || abs(params->v) > 1) return 2 * p;
+            return 2 * p * (source_func(r, params) * tau0(r, params) / (1. + s * mu * mu) +
+                            exp(-1 * tau_star));
+        } else
+        {
+            if(isnan(z0) || abs(params->v) > 1) return 0;
+            return 2 * p * (source_func(r, params) * tau0(r, params) / (1. + s * mu * mu));
+        }
     }
 }
 
@@ -287,21 +351,28 @@ double integrate_flux(double wmu, pcyg_params* params)
     flux_func.function = &flux_integrand;
     flux_func.params = params;
 
-    gsl_integration_qags(&flux_func, 0, 1, 0, 1e-4, 10000, integration_workspace, &result1, &error);
-    gsl_integration_qags(&flux_func, 1, params->rout, 0, 1e-4, 10000, integration_workspace, &result2, &error);
+//    gsl_integration_qags(&flux_func, 0, 1, 0, 1e-4, 10000, integration_workspace, &result1, &error);
+//    gsl_integration_qags(&flux_func, 1, params->rout, 0, 1e-4, 10000, integration_workspace, &result2, &error);
 
-    return result1;
+    result2 = 0;
+    gsl_integration_qags(&flux_func, 0, params->rout, 0, 1e-5, 1000, integration_workspace, &result1, &error);
+
+    return result1 + result2;
 }
 
 double integrate_flux2(double wmu, pcyg_params* params)
 {
     double integral = 0;
     double dp = 0.1;
+    const double precision = 10;
+    const double dp_min = 0.1;
 
     params->v = wmu;
 
     for(double p=0; p<params->rout; p+=dp)
     {
+        dp = p / precision;
+        if(dp < dp_min) dp = dp_min;
         integral += flux_integrand(p, params) * dp;
     }
     return integral / 1.1;
@@ -309,7 +380,7 @@ double integrate_flux2(double wmu, pcyg_params* params)
 
 int main()
 {
-    integration_workspace = gsl_integration_workspace_alloc(1000000);
+    integration_workspace = gsl_integration_workspace_alloc(1000);
 
     const gsl_root_fsolver_type* solver_type;
     solver_type = gsl_root_fsolver_brent;
@@ -317,26 +388,55 @@ int main()
 
     pcyg_params params;
     params.beta = 1;
-    params.gamma = 1;
+    params.gamma = 6.4;
     params.w0 = 0.01;
-    params.vinf = 0.35;
+    params.vinf = 0.01;
     params.k = 0.0001;
     params.rout = 100;
-    params.T = 1;
-    params.turb = 0.001;
+    params.T = 1500;
+    params.turb = 0.1;
+    params.continuum = true;
+    params.line_emis = true;
 
     TextOutput outfile("../dat/pcyg_sei.dat");
 
-//    for(double p=0; p<10; p+=0.1)
+//    for(double wmu = -1.5; wmu<=1.5; wmu += 0.1)
+//        for(double p = 0; p<10; p+=0.1)
+//        {
+//            outfile << find_los_z(wmu, p, &params) << p << endl;
+//        }
+
+//    for(double wmu=-1.5; wmu<1.5; wmu+=0.01)
 //    {
-//        params.v = 0.9;
-//        outfile << p << flux_integrand(p, &params) << endl;
+//        params.v = wmu;
+//        params.p = 0.5;
+//        outfile << wmu << tau(100, &params) << endl;
+//    }
+//
+//    for(double wmu=-1.5; wmu<1.5; wmu+=0.01)
+//    {
+//        params.v = wmu;
+//        const double p = 1.01;
+//        outfile << wmu << flux_integrand(p, &params) << endl;
 //    }
 
-    for(double wmu=-1.5; wmu<1.5; wmu+=0.01)
+//    for(double r=1; r<100; r+=0.1)
+//    {
+//        outfile << r << source_func(r, &params) << endl;
+//    }
+//
+    for(double wmu=-1.5; wmu<1.5; wmu+=0.05)
     {
-        outfile << wmu << integrate_flux2(wmu, &params) << endl;
+        outfile << wmu << integrate_flux(wmu, &params) << endl;
     }
+
+//    const double en0 = 7.4;
+//
+//    for(double en = 3; en < 15; en+=0.05)
+//    {
+//        const double wmu = (en0 - en) / (en0 * params.vinf);
+//        outfile << en << integrate_flux2(wmu, &params) << endl;
+//    }
     outfile.close();
 
     gsl_integration_workspace_free(integration_workspace);
