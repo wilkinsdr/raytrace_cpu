@@ -42,3 +42,9 @@ target_link_libraries(gsl_test GSL::gsl)
 
 add_executable(pcyg_sei pcyg_sei.cpp)
 target_link_libraries(pcyg_sei GSL::gsl)
+
+add_executable(pcyg_rel pcyg_rel.cpp)
+target_link_libraries(pcyg_rel GSL::gsl)
+
+add_executable(disc_wind disc_wind.cpp)
+target_link_libraries(disc_wind GSL::gsl)
