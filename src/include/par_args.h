@@ -12,9 +12,11 @@
 #include <string>
 #include <exception>
 #include <typeinfo>
+#include <vector>
 using namespace std;
 
 #define SEP_CHAR '='
+#define KEY_PREFIX "--"
 
 class ArgumentException : public exception
 {
@@ -37,25 +39,38 @@ public:
 class ParameterArgs
 {
 private:
-	map<string, string> pars;
+    map <string, string> pars;
+    vector <string> positional_args;
 
-	void trim_whitespace(string& str)
-	{
-		str.erase(0, str.find_first_not_of("\t "));
-		str.erase(str.find_last_not_of("\t ") + 1);
-	}
+    void trim_whitespace(string &str)
+    {
+        str.erase(0, str.find_first_not_of("\t "));
+        str.erase(str.find_last_not_of("\t ") + 1);
+    }
 
-	bool check_line(string& line)
-	{
-		string temp = line;
+    bool is_key(string &line)
+    {
+        string temp = line;
 
-		trim_whitespace(temp);
-		size_t sep_pos = line.find(SEP_CHAR);
-		if(sep_pos == 0 || sep_pos == temp.npos)
-			return false;
+        trim_whitespace(temp);
+        size_t prefix_pos = temp.find(KEY_PREFIX);
+        if(prefix_pos == temp.npos)
+            return false;
 
-		return true;
-	}
+        return true;
+    }
+
+    bool is_key_pair(string &line)
+    {
+        string temp = line;
+
+        trim_whitespace(temp);
+        size_t sep_pos = temp.find(SEP_CHAR);
+        if(sep_pos == 0 || sep_pos == temp.npos)
+            return false;
+
+        return true;
+    }
 
 	string parse_key(string const& line)
 	{
@@ -93,13 +108,16 @@ private:
 	}
 
 	void parse_argv(int argc, char** argv)
-	{
-		for(int i=0; i<argc; i++)
-		{
-			string line(argv[i]);
-			parse_key_value(line);
-		}
-	}
+    {
+        for(int i = 1; i < argc; i++)
+        {
+            string line(argv[i]);
+            if(is_key(line))
+                parse_key_value(line);
+            else
+                positional_args.push_back(line);
+        }
+    }
 
 public:
 	ParameterArgs(int argc, char** argv)
@@ -172,16 +190,32 @@ public:
 
 	template <typename T>
 	static T string_to_T(std::string const &str)
-	{
-		istringstream istr(str);
-		T parsed_val;
-		if (!(istr >> parsed_val))
-		{
-			cerr << "ParameterFile ERROR : Could not parse value";
-			return 0;
-		}
-		return parsed_val;
-	}
+    {
+        istringstream istr(str);
+        T parsed_val;
+        if(!(istr >> parsed_val))
+        {
+            cerr << "ParameterFile ERROR : Could not parse value";
+            return 0;
+        }
+        return parsed_val;
+    }
+
+    int num_positional()
+    {
+        return positional_args.size();
+    }
+
+    string operator[](int i)
+    {
+        if(i < 0 || i >= positional_args.size())
+        {
+            ostringstream errormsg;
+            errormsg << "Positional argument " << i + 1 << " not supplied";
+            throw ArgumentException(errormsg.str());
+        }
+        return positional_args[i];
+    }
 };
 
 #endif //RAYTRACE_PAR_ARGS_H_H
