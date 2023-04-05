@@ -24,7 +24,7 @@ using namespace std;
 #include "../include/kerr.h"
 #include "../include/text_output.h"
 #include "../include/progress_bar.h"
-#include "raytracer.h"
+#include "../raytracer/raytracer.h"
 //#include "mapper.h"
 
 
@@ -56,7 +56,7 @@ public:
 
 	T **emis, **absorb, **emis_ent;
 
-    void run_source_trace( T r_max = 1000, T theta_max = M_PI/2, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
+    void run_source_trace( T r_max = 1000, T theta_max = M_PI_2, int show_progress = 1, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true );
     inline int propagate_source(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0, int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
 	void set_source(T size_xy, T size_z, T vel, int motion = 1)

@@ -11,7 +11,7 @@
 #include <cmath>
 using namespace std;
 
-#include "raytracer/sourcetracer_imageplane.h"
+#include "sourcetracer/sourcetracer_imageplane.h"
 #include "include/par_file.h"
 
 bool pointsource_stop(double t, double r, double theta, double phi, double* args)
@@ -68,6 +68,7 @@ int main(int argc, char** argv)
 	double pointsource_r = par_file.get_parameter<double>("pointsource_r");
 	double tau = par_file.get_parameter<double>("tau");
 	double tol = par_file.get_parameter<double>("tol", TOL);
+    int show_progress = par_file.get_parameter<double>("show_progress", 1);
 
 	double dx = (xmax - x0) / (Nx - 1);
 	double dy = (ymax - y0) / (Ny - 1);
@@ -79,8 +80,8 @@ int main(int argc, char** argv)
 
 	RaytraceSource = new SourceTracer_ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, en0, enmax, Nen, logbin_en, tol, plane_phi0);
 	RaytraceSource->set_source(source_size_xy, source_size_z, source_vel, source_motion);
-	RaytraceSource->RedshiftStart();
-	RaytraceSource->run_source_trace( 1.5*dist );
+	RaytraceSource->redshift_start();
+	RaytraceSource->run_source_trace( 1.5*dist, M_PI_2, show_progress );
 
 	double *en, *emis, *abs;
 
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
 	for(int ien=0; ien<Nen; ien++)
 		emis[ien] = 0;
 
-	for(int ray=0; ray< RaytraceSource->get_count(); ray++)
+	for(int ray=0; ray<RaytraceSource->get_count(); ray++)
 	{
 		for(int ien=0; ien<Nen; ien++)
 		{
@@ -102,9 +103,9 @@ int main(int argc, char** argv)
 
 	RaytraceSource = new SourceTracer_ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, en0, enmax, Nen, logbin_en, tol, plane_phi0);
 	RaytraceSource->set_source(source_size_xy, source_size_z, source_vel, source_motion);
-	RaytraceSource->RedshiftStart();
+	RaytraceSource->redshift_start();
 	RaytraceSource->set_stopping_fn(pointsource_stop, stopping_args);
-	RaytraceSource->run_source_trace( 1.5*dist );
+	RaytraceSource->run_source_trace( 1.5*dist, M_PI_2, show_progress );
 	int* ray_status = RaytraceSource->get_status();
 	double *ray_t, *ray_r, *ray_theta, *ray_phi, *ray_redshift;
 	int *ray_steps;

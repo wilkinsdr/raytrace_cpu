@@ -22,7 +22,7 @@ using namespace std;
 
 #include "../include/kerr.h"
 #include "../include/array.h"
-#include "raytracer.h"
+#include "../raytracer/raytracer.h"
 #include "../include/progress_bar.h"
 
 #include "H5Cpp.h"
@@ -36,8 +36,6 @@ private:
 	double vel;
 
 	bool reverse;
-
-	long num_rays;
 
     virtual long get_num_rays()
     {
@@ -54,6 +52,8 @@ public:
 	int Nr, Ntheta, Nphi;
 	double bin_dr, bin_dtheta, bin_dphi;
 	bool logbin_r;
+
+    long num_rays;
 
 	Array3D<double> *map_time, *map_redshift, *map_flux;
 	Array3D<int> *map_Nrays;
@@ -107,6 +107,47 @@ public:
     }
 
     void calculate_volume();
+
+    inline int r_index(double r)
+    {
+        int ir = (logbin_r) ? static_cast<int>( log(r / r0) / log(bin_dr)) : static_cast<int>((r - r0) / bin_dr);
+
+        if(ir < 0) ir = 0;
+        else if  (ir >= Nr) ir = Nr - 1;
+
+        return ir;
+    }
+    inline int theta_index(double theta)
+    {
+        int itheta = static_cast<int>(theta / bin_dtheta);
+
+        if(itheta < 0) itheta = 0;
+        else if  (itheta >= Ntheta) itheta = Ntheta - 1;
+
+        return itheta;
+    }
+    inline int phi_index(double phi)
+    {
+        int iphi = static_cast<int>((phi + M_PI)/ bin_dphi);
+
+        if(iphi < 0) iphi = 0;
+        else if  (iphi >= Nphi) iphi = Nphi - 1;
+
+        return iphi;
+    }
+
+    inline double bin_r(int ir)
+    {
+        return (logbin_r) ? r0 * pow(bin_dr, ir) : r0 + ir*bin_dr;
+    }
+    inline double bin_theta(int itheta)
+    {
+        return itheta*bin_dtheta;
+    }
+    inline double bin_phi(int iphi)
+    {
+        return iphi*bin_dphi - M_PI;
+    }
 
 };
 

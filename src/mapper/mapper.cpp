@@ -15,6 +15,8 @@ Mapper::Mapper( int num_rays, float spin_par, double init_r0, double init_rmax, 
 	bin_dtheta = (M_PI_2)/(Ntheta - 1);
 	bin_dphi = (2*M_PI)/(Nphi - 1);
 
+	cout << "Allocating maps with dimension " << Nr << "x" << Ntheta << "x" << Nphi << endl;
+
 	map_time = new Array3D<double>(Nr, Ntheta, Nphi);
 	map_redshift = new Array3D<double>(Nr, Ntheta, Nphi);
 	map_Nrays = new Array3D<int>(Nr, Ntheta, Nphi);
@@ -253,7 +255,7 @@ inline int Mapper::map_ray(int ray, const double rlim, const double thetalim, co
 				else
 					V = 1 / (a + r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 
-				redshift = Raytracer<double>::ray_redshift(V, false, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
+				redshift = Raytracer<double>::ray_redshift(V, reverse, false, r, theta, phi, k, h, Q, rdot_sign, thetadot_sign, Raytracer<double>::m_emit[ray], motion);
 				if(redshift > 0 && isfinite(redshift))
 				{
 					(*map_time)[ir][itheta][iphi] += t;

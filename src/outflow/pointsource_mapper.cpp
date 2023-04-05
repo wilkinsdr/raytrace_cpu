@@ -5,7 +5,7 @@
 #include <string>
 using namespace std;
 
-#include "raytracer/mapper_pointsource.h"
+#include "mapper/mapper_pointsource.h"
 #include "include/par_file.h"
 #include "include/par_args.h"
 

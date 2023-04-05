@@ -44,12 +44,14 @@ SourceTracer<T>::SourceTracer( int num_rays, float spin_par, T init_en0, T init_
 template <typename T>
 SourceTracer<T>::~SourceTracer( )
 {
-	for(int i=0; i<Nen; i++)
+    cout << "Cleaning up source tracer" << endl;
+
+	for(int i=0; i<Raytracer<T>::nRays; i++)
 	{
 		delete[] emis[i];
 		delete[] absorb[i];
 	}
-	for(int i=0; i<Nt; i++)
+	for(int i=0; i<Nen; i++)
 	{
 		delete[] emis_ent[i];
 	}
@@ -59,7 +61,7 @@ SourceTracer<T>::~SourceTracer( )
 }
 
 template <typename T>
-void SourceTracer<T>::run_source_trace( T r_max, T theta_max, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
+void SourceTracer<T>::run_source_trace( T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -78,10 +80,11 @@ void SourceTracer<T>::run_source_trace( T r_max, T theta_max, TextOutput* outfil
 	//
 	cout << "Running source raytracer..." << endl;
 
-	ProgressBar prog(Raytracer<T>::nRays, "Ray");
+    ProgressBar prog(Raytracer<T>::nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
 	for(int ray=0; ray<Raytracer<T>::nRays; ray++)
 	{
-		prog.show(ray+1);
+        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
 		if(Raytracer<T>::m_steps[ray] == -1) continue;
 		else if(Raytracer<T>::m_steps[ray] >= STEPLIM) continue;
 
@@ -226,7 +229,7 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 			}
 
 		//if (r>5 && theta > 0.5 && (r*r*sin(theta)*sin(theta)*cos(phi)*cos(phi)/(source_size_xy*source_size_xy) + r*r*sin(theta)*sin(theta)*sin(phi)*sin(phi)/(source_size_xy*source_size_xy) + r*r*cos(theta)*cos(theta)/(source_size_z*source_size_z)) < 1 )
-		if (r > 5 && r < 50 && theta > 0.5 && theta < M_PI_2)
+		if (r > 10 && r < 50 && theta > 0.5 && theta < M_PI_2)
 		{
 			const T len = -1*(grr * dr * dr + gthth * dtheta * dtheta + gphph * dphi * dphi);
 			//const T dens = 1./0.02;
@@ -251,10 +254,10 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 //				if(!(*(mapper->map_Nrays)[ir][itheta][iphi] > 0)) continue;
 //			}
 
-//			const T emissivity = (mapper != nullptr) ? pow(*(mapper->map_redshift)[ir][itheta][iphi], -2) * *(mapper->map_Nrays)[ir][itheta][iphi] / *(mapper->bin_volume)[ir][itheta][iphi] : (1./(r*r));
+//			const T emissivity = (mapper != nullptr) ? pow(*(mapper->map_redshift)[ir][itheta][iphi], -2) * *(mapper->map_Nrays)[ir][itheta][iphi] / (mapper->num_rays * *(mapper->bin_volume)[ir][itheta][iphi]) : (1./(r*r));
 //			const T time = (mapper != nullptr) ? t + *(mapper->map_time)[ir][itheta][iphi] : t;
 
-            const T emissivity = (1./(r*r));
+            const T emissivity = ((len*len)/(4*M_PI*r*r)); // approximate the emitting region across this ray step as a single point source at the centre of a patch with area len*len
             const T time =  t;
 
 			const int it = (t - t0) / dt;
@@ -263,7 +266,7 @@ inline int SourceTracer<T>::propagate_source(int ray, const T rlim, const T thet
 			{
 //                cout << setw(10) << ray << setw(10) << ien << setw(10) << exp(-1 * absorb[ray][ien]) << endl;
 
-				emis[ray][ien] += (emissivity * len * dens * pow(energy, 3)) * exp(-1 * absorb[ray][ien]); // N.B. self-absorption
+				emis[ray][ien] += (emissivity * dens * pow(energy, 3)) * exp(-1 * absorb[ray][ien]); // N.B. self-absorption
 				absorb[ray][ien] += len * dens;
 				if(it >=0 && it < Nt)
 					emis_ent[ien][it] += emissivity * len * dens * pow(energy, 3);
