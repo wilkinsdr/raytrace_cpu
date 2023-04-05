@@ -85,21 +85,21 @@ void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
 			T pt = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
 			if(pt < 0) pt = ( -B - sqrt(B*B - 4*A*C) ) / (2*A);
 
-			Raytracer<T>::m_t[ix] = t;
-			Raytracer<T>::m_r[ix] = r;
-			Raytracer<T>::m_theta[ix] = theta;
-			Raytracer<T>::m_phi[ix] = phi;
-			Raytracer<T>::m_pt[ix] = pt;
-			Raytracer<T>::m_pr[ix] = pr;
-			Raytracer<T>::m_ptheta[ix] = ptheta;
-			Raytracer<T>::m_pphi[ix] = pphi;
+			Raytracer<T>::rays[ix].t = t;
+			Raytracer<T>::rays[ix].r = r;
+			Raytracer<T>::rays[ix].theta = theta;
+			Raytracer<T>::rays[ix].phi = phi;
+			Raytracer<T>::rays[ix].pt = pt;
+			Raytracer<T>::rays[ix].pr = pr;
+			Raytracer<T>::rays[ix].ptheta = ptheta;
+			Raytracer<T>::rays[ix].pphi = pphi;
 
 			// calculate constants of motion
 			Raytracer<T>::CalculateConstantsFromP(ix, pt, pr, ptheta, pphi);
-			Raytracer<T>::m_rdot_sign[ix] = -1;
-			Raytracer<T>::m_thetadot_sign[ix] = 1;
+			Raytracer<T>::rays[ix].rdot_sign = -1;
+			Raytracer<T>::rays[ix].thetadot_sign = 1;
 
-			Raytracer<T>::m_k[ix] = 1;
+			Raytracer<T>::rays[ix].k = 1;
 
 			const T b = sqrt(x*x + y*y);
 			T beta = asin(y/b);
@@ -109,12 +109,12 @@ void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
 			T ltheta = b*sin(beta);
 			T Q = (ltheta*ltheta) - (a*cos(theta))*(a*cos(theta))+((h/tan(theta)))*((h/tan(theta)));
 
-			Raytracer<T>::m_h[ix] = h;
-			Raytracer<T>::m_Q[ix] = Q;
+			Raytracer<T>::rays[ix].h = h;
+			Raytracer<T>::rays[ix].Q = Q;
 
-			Raytracer<T>::m_thetadot_sign[ix] = (ltheta>=0) ? 1 : -1;
+			Raytracer<T>::rays[ix].thetadot_sign = (ltheta>=0) ? 1 : -1;
 			
-			Raytracer<T>::m_steps[ix] = 0;
+			Raytracer<T>::rays[ix].steps = 0;
 		}
 	}
 }

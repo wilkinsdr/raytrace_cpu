@@ -95,17 +95,15 @@ int main(int argc, char** argv)
 	raytrace_source.range_phi();
 	raytrace_source.redshift(-1);
 
-	raytrace_source.map_results(steps, t, r, theta, phi, redshift);
-
 	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
 	{
 		if (steps[ray] > 0)
 		{
 		    double x, y, z;
-		    cartesian(x, y, z, r[ray], theta[ray], phi[ray], spin);
+		    cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
             if(z < 1E-2 && redshift[ray] > 0 && r[ray] >= r_isco)
             {
-                int ir = (logbin_r) ? static_cast<int>( log(r[ray] / r_min) / log(dr)) : static_cast<int>((r[ray] - r_min) / dr);
+                int ir = (logbin_r) ? static_cast<int>( log(raytrace_source.rays[ray].r / r_min) / log(dr)) : static_cast<int>((raytrace_source.rays[ray].r - r_min) / dr);
 
                 if(ir >= 0 && ir < Nr)
                 {
@@ -114,13 +112,13 @@ int main(int argc, char** argv)
                     // primary flux to work out returning radiation normalisation
                     // fraction of rays from the primary source hitting this part of the disc
                     // multiplied by the redshift to obtain the photon arrival rate in the rest frame
-                    disc_flux[ir] += 1/(num_primary_rays * pow(redshift[ray],1));
+                    disc_flux[ir] += 1/(num_primary_rays * pow(raytrace_source.rays[ray].redshift,1));
 
                     // emissivity in the rest frame of the disc material
                     disc_emis[ir] += 1/pow(redshift[ray],gamma);
 
-                    disc_redshift[ir] += redshift[ray];
-                    disc_time[ir] += t[ray];
+                    disc_redshift[ir] += raytrace_source.rays[ray].redshift;
+                    disc_time[ir] += raytrace_source.rays[ray].t;
                 }
 
                 ++disc_count;

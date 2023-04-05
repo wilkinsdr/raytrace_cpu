@@ -43,7 +43,7 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 
 			if(m_cosalpha[ix] >= cosalphamax || m_beta[ix] >= betamax)
 			{
-				Raytracer<T>::m_steps[ix] = -1;
+				Raytracer<T>::rays[ix].steps = -1;
 				continue;
 			}
 
@@ -53,17 +53,17 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 //			Raytracer<T>::m_thetadot_sign[ix] = (abs(m_beta[ix]) < M_PI/2) ? 1 : -1;
 
 			// initialise position of photon
-			Raytracer<T>::m_t[ix] = pos[0];
-			Raytracer<T>::m_r[ix] = pos[1];
-			Raytracer<T>::m_theta[ix] = pos[2];
-			Raytracer<T>::m_phi[ix] = pos[3];;
-			Raytracer<T>::m_pt[ix] = 0;
-			Raytracer<T>::m_pr[ix] = 0;
-			Raytracer<T>::m_ptheta[ix] = 0;
-			Raytracer<T>::m_pphi[ix] = 0;
-			Raytracer<T>::m_steps[ix] = 0;
+			Raytracer<T>::rays[ix].t = pos[0];
+			Raytracer<T>::rays[ix].r = pos[1];
+			Raytracer<T>::rays[ix].theta = pos[2];
+			Raytracer<T>::rays[ix].phi = pos[3];;
+			Raytracer<T>::rays[ix].pt = 0;
+			Raytracer<T>::rays[ix].pr = 0;
+			Raytracer<T>::rays[ix].ptheta = 0;
+			Raytracer<T>::rays[ix].pphi = 0;
+			Raytracer<T>::rays[ix].steps = 0;
 			// calculate constants of motion
-			Raytracer<T>::CalculateConstants(ix, alpha, m_beta[ix], velocity, energy);
+			Raytracer<T>::calculate_constants(ix, alpha, m_beta[ix], velocity, energy);
 		}
 }
 

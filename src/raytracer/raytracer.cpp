@@ -32,29 +32,13 @@ Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, float init_m
 	horizon = kerr_horizon<T>(spin);
 	cout << "Event horizon at " << horizon << endl;
 
-	cout << "Allocating memory (" << 9*nRays*sizeof(T) + nRays*sizeof(int) << " B)" << endl;
-	m_t = new T[nRays];
-	m_r = new T[nRays];
-	m_theta = new T[nRays];
-	m_phi = new T[nRays];
-	m_pt = new T[nRays];
-	m_pr = new T[nRays];
-	m_ptheta = new T[nRays];
-	m_pphi = new T[nRays];
-	m_steps = new int[nRays];
-	m_status = new int[nRays];
-	m_emit = new T[nRays];
-	m_redshift = new T[nRays];
-    m_k = new T[nRays];
-    m_h = new T[nRays];
-    m_Q = new T[nRays];
-    m_rdot_sign = new int[nRays];
-    m_thetadot_sign = new int[nRays];
+	cout << "Allocating memory (" << nRays*sizeof(Ray<T>) << " B)" << endl;
+    rays = new Ray<T>[nRays];
 
     for(int ray=0; ray<nRays; ray++)
     {
-	    m_steps[ray] = -1;
-	    m_status[ray] = 0;
+	    rays[ray].steps = -1;
+	    rays[ray].status = 0;
     }
 }
 
@@ -66,23 +50,7 @@ Raytracer<T>::~Raytracer( )
 	//
 	cout << "Cleaning up raytracer" << endl;
 
-	delete[] m_t;
-	delete[] m_r;
-	delete[] m_theta;
-	delete[] m_phi;
-	delete[] m_pt;
-	delete[] m_pr;
-	delete[] m_ptheta;
-	delete[] m_pphi;
-	delete[] m_steps;
-	delete[] m_status;
-	delete[] m_emit;
-	delete[] m_redshift;
-	delete[] m_k;
-	delete[] m_h;
-	delete[] m_Q;
-	delete[] m_rdot_sign;
-	delete[] m_thetadot_sign;
+	delete[] rays;
 }
 
 template <typename T>
@@ -110,12 +78,12 @@ void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOut
 	for(int ray=0; ray<nRays; ray++)
 	{
         if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
-	    if(m_steps[ray] == -1) continue;
-		else if(m_steps[ray] >= STEPLIM) continue;
+	    if(rays[ray].steps < 0) continue;
+		else if(rays[ray].steps >= STEPLIM) continue;
 
 		int n;
 		n = propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-		//m_steps[ray] += n;
+		//rays[ray].steps += n;
 
 		if(outfile != 0)
 			outfile->newline(2);
@@ -143,20 +111,20 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 
 	// copy variables locally to simplify the code
 	T a = spin;
-	T t = m_t[ray];
-	T r = m_r[ray];
-	T theta = m_theta[ray];
-	T phi = m_phi[ray];
-	T pt = m_pt[ray];
-	T pr = m_pr[ray];
-	T ptheta = m_ptheta[ray];
-	T pphi = m_pphi[ray];
-	int rdot_sign = m_rdot_sign[ray];
-	int thetadot_sign = m_thetadot_sign[ray];
+	T t = rays[ray].t;
+	T r = rays[ray].r;
+	T theta = rays[ray].theta;
+	T phi = rays[ray].phi;
+	T pt = rays[ray].pt;
+	T pr = rays[ray].pr;
+	T ptheta = rays[ray].ptheta;
+	T pphi = rays[ray].pphi;
+	int rdot_sign = rays[ray].rdot_sign;
+	int thetadot_sign = rays[ray].thetadot_sign;
 
-	const T k = m_k[ray];
-	const T h = m_h[ray];
-	const T Q = m_Q[ray];
+	const T k = rays[ray].k;
+	const T h = rays[ray].h;
+	const T Q = rays[ray].Q;
 
 	bool write_started = false;
 
@@ -228,8 +196,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
 		if(pt <= 0)
 		{
-			m_status[ray] = -2;
-            m_steps[ray] = -1;
+			rays[ray].status = -2;
+            rays[ray].steps = -1;
 			break;
 		}
 
@@ -265,18 +233,18 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		}
 	}
 
-	m_t[ray] = t;
-	m_r[ray] = r;
-	m_theta[ray] = theta;
-	m_phi[ray] = phi;
-	m_pt[ray] = pt;
-	m_pr[ray] = pr;
-	m_ptheta[ray] = ptheta;
-	m_pphi[ray] = pphi;
-	m_rdot_sign[ray] = rdot_sign;
-	m_thetadot_sign[ray] = thetadot_sign;
+	rays[ray].t = t;
+    rays[ray].r = r;
+    rays[ray].theta = theta;
+    rays[ray].phi = phi;
+    rays[ray].pt = pt;
+    rays[ray].pr = pr;
+    rays[ray].ptheta = ptheta;
+    rays[ray].pphi = pphi;
+    rays[ray].rdot_sign = rdot_sign;
+    rays[ray].rdot_sign = thetadot_sign;
 
-	if(steps > 0) m_steps[ray] += steps;
+	if(steps > 0) rays[ray].steps += steps;
 
 	return steps;
 }
@@ -309,13 +277,13 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 		const T a = (reverse) ? -1*spin : spin;
 
 		// metric coefficients
-		const T rhosq = m_r[ray]*m_r[ray] + (a*cos(m_theta[ray]))*(a*cos(m_theta[ray]));
-		const T delta = m_r[ray]*m_r[ray] - 2*m_r[ray] + a*a;
-		const T sigmasq = (m_r[ray]*m_r[ray] + a*a)*(m_r[ray]*m_r[ray] + a*a) - a*a*delta*sin(m_theta[ray])*sin(m_theta[ray]);
+		const T rhosq = rays[ray].r*rays[ray].r + (a*cos(rays[ray].theta))*(a*cos(rays[ray].theta));
+		const T delta = rays[ray].r*rays[ray].r - 2*rays[ray].r + a*a;
+		const T sigmasq = (rays[ray].r*rays[ray].r + a*a)*(rays[ray].r*rays[ray].r + a*a) - a*a*delta*sin(rays[ray].theta)*sin(rays[ray].theta);
 
 		const T e2nu = rhosq * delta / sigmasq;
-		const T e2psi = sigmasq * sin(m_theta[ray])*sin(m_theta[ray]) / rhosq;
-		const T omega = 2*a*m_r[ray] / sigmasq;
+		const T e2psi = sigmasq * sin(rays[ray].theta)*sin(rays[ray].theta) / rhosq;
+		const T omega = 2*a*rays[ray].r / sigmasq;
 
 		T g[16];
 		for(int i=0; i<16; i++)
@@ -331,9 +299,9 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 
 		// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial plane
 		if(V == -1 && projradius)
-			V = 1 / (a + m_r[ray]*sin(m_theta[ray])*sqrt(m_r[ray]*sin(m_theta[ray])));	// project the radius parallel to the equatorial plane
+			V = 1 / (a + rays[ray].r*sin(rays[ray].theta)*sqrt(rays[ray].r*sin(rays[ray].theta)));	// project the radius parallel to the equatorial plane
 		else if(V == -1)
-			V = 1 / (a + m_r[ray]*sqrt(m_r[ray]));
+			V = 1 / (a + rays[ray].r*sqrt(rays[ray].r));
 
 		// if(reverse) V *= -1;
 
@@ -344,17 +312,17 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 							(1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
 
 		// photon momentum
-        momentum_from_consts<T>(p[0], p[1], p[2], p[3], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray],
-                                m_thetadot_sign[ray], m_r[ray], m_theta[ray], m_phi[ray], spin);
+        momentum_from_consts<T>(p[0], p[1], p[2], p[3], rays[ray].k, rays[ray].h, rays[ray].Q, rays[ray].rdot_sign,
+                                rays[ray].thetadot_sign, rays[ray].r, rays[ray].theta, rays[ray].phi, spin);
 
 		// if we're propagating backwards, reverse the direction of the photon momentum
 		if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
 
 		// evaluate dot product to get energy
-		m_emit[ray] = 0;
+		rays[ray].emit = 0;
 		for(int i=0; i<4; i++)
 			for(int j=0; j<4; j++)
-				m_emit[ray] += g[i*4 + j] * et[i]* p[j];
+				rays[ray].emit += g[i*4 + j] * et[i]* p[j];
 	}
 }
 
@@ -384,7 +352,7 @@ void Raytracer<T>::redshift(T V, bool reverse, bool projradius, int motion )
 
 	for(int ray=0; ray<nRays; ray++)
 	{
-		m_redshift[ray] = ray_redshift(V, reverse, projradius, m_r[ray], m_theta[ray], m_phi[ray], m_k[ray], m_h[ray], m_Q[ray], m_rdot_sign[ray], m_thetadot_sign[ray], m_emit[ray], motion);
+		rays[ray].redshift = ray_redshift(V, reverse, projradius, rays[ray].r, rays[ray].theta, rays[ray].phi, rays[ray].k, rays[ray].h, rays[ray].Q, rays[ray].rdot_sign, rays[ray].thetadot_sign, rays[ray].emit, motion);
 	}
 }
 
@@ -476,29 +444,29 @@ void Raytracer<T>::range_phi(T min, T max )
 	for( int ray=0; ray<nRays; ray++ )
 	{
 		// check phi isn't something horrible so we don't enter an infinite loop
-		if( abs(m_phi[ray]) > 1000 || m_phi[ray] != m_phi[ray] || !(m_steps[ray]>0) ) continue;
+		if( abs(rays[ray].phi) > 1000 || rays[ray].phi != rays[ray].phi || !(rays[ray].steps>0) ) continue;
 
-		while( m_phi[ray] >= max ) m_phi[ray] -= 2*M_PI;
-		while( m_phi[ray] < min ) m_phi[ray] += 2*M_PI;
+		while( rays[ray].phi >= max ) rays[ray].phi -= 2*M_PI;
+		while( rays[ray].phi < min ) rays[ray].phi += 2*M_PI;
 	}
 }
 
 
 template <typename T>
-inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
+inline void Raytracer<T>::calculate_constants(int ray, T alpha, T beta, T V, T E)
 {
 	//
 	// Compute the constants of motion for a ray emitted at polar angles alpha and beta in the frame
-	// of a source at (m_t[ray],m_r[ray],m_theta[ray],m_phi[ray]) orbiting azimuthally at angular velocity V
+	// of a source at (rays[ray].t,rays[ray].r,rays[ray].theta,rays[ray].phi) orbiting azimuthally at angular velocity V
 	//
-	const T rhosq = m_r[ray]*m_r[ray] + (spin*cos(m_theta[ray]))*(spin*cos(m_theta[ray]));
-	const T delta = m_r[ray]*m_r[ray] - 2*m_r[ray] + spin*spin;
-	const T sigmasq = (m_r[ray]*m_r[ray] + spin*spin)*(m_r[ray]*m_r[ray] + spin*spin) - spin*spin*delta*sin(m_theta[ray])*sin(m_theta[ray]);
+	const T rhosq = rays[ray].r*rays[ray].r + (spin*cos(rays[ray].theta))*(spin*cos(rays[ray].theta));
+	const T delta = rays[ray].r*rays[ray].r - 2*rays[ray].r + spin*spin;
+	const T sigmasq = (rays[ray].r*rays[ray].r + spin*spin)*(rays[ray].r*rays[ray].r + spin*spin) - spin*spin*delta*sin(rays[ray].theta)*sin(rays[ray].theta);
 
 	// metric coefficients
 	const T e2nu = rhosq * delta / sigmasq;
-	const T e2psi = sigmasq * sin(m_theta[ray])*sin(m_theta[ray]) / rhosq;
-	const T omega = 2*spin*m_r[ray] / sigmasq;
+	const T e2psi = sigmasq * sin(rays[ray].theta)*sin(rays[ray].theta) / rhosq;
+	const T omega = 2*spin*rays[ray].r / sigmasq;
 
 	// tetrad basis vector components
 	const T et0 = (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu);
@@ -520,30 +488,30 @@ inline void Raytracer<T>::CalculateConstants(int ray, T alpha, T beta, T V, T E)
 	const T thetadot = rdotprime[2]*e22;
 
 	// find the corresponding values of k, h and Q using the geodesic equations
-	m_k[ray] = (1 - 2*m_r[ray]/rhosq)*tdot + (2*spin*m_r[ray]*sin(m_theta[ray])*sin(m_theta[ray])/rhosq)*phidot;
+	rays[ray].k = (1 - 2*rays[ray].r/rhosq)*tdot + (2*spin*rays[ray].r*sin(rays[ray].theta)*sin(rays[ray].theta)/rhosq)*phidot;
 
-	m_h[ray] = phidot * ( (m_r[ray]*m_r[ray] + spin*spin)*(m_r[ray]*m_r[ray] + spin*spin*cos(m_theta[ray])*cos(m_theta[ray]) - 2*m_r[ray])*sin(m_theta[ray])*sin(m_theta[ray]) + 2*spin*spin*m_r[ray]*sin(m_theta[ray])*sin(m_theta[ray])*sin(m_theta[ray])*sin(m_theta[ray]) );
-	m_h[ray] = m_h[ray] - 2*spin*m_r[ray]*m_k[ray]*sin(m_theta[ray])*sin(m_theta[ray]);
-	m_h[ray] = m_h[ray] / ( m_r[ray]*m_r[ray] + spin*spin*cos(m_theta[ray])*cos(m_theta[ray]) - 2*m_r[ray] );
+	rays[ray].h = phidot * ( (rays[ray].r*rays[ray].r + spin*spin)*(rays[ray].r*rays[ray].r + spin*spin*cos(rays[ray].theta)*cos(rays[ray].theta) - 2*rays[ray].r)*sin(rays[ray].theta)*sin(rays[ray].theta) + 2*spin*spin*rays[ray].r*sin(rays[ray].theta)*sin(rays[ray].theta)*sin(rays[ray].theta)*sin(rays[ray].theta) );
+	rays[ray].h = rays[ray].h - 2*spin*rays[ray].r*rays[ray].k*sin(rays[ray].theta)*sin(rays[ray].theta);
+	rays[ray].h = rays[ray].h / ( rays[ray].r*rays[ray].r + spin*spin*cos(rays[ray].theta)*cos(rays[ray].theta) - 2*rays[ray].r );
 
-	m_Q[ray] = rhosq*rhosq*thetadot*thetadot - (spin*m_k[ray]*cos(m_theta[ray]) + m_h[ray]/tan(m_theta[ray]))*(spin*m_k[ray]*cos(m_theta[ray]) - m_h[ray]/tan(m_theta[ray]));
+	rays[ray].Q = rhosq*rhosq*thetadot*thetadot - (spin*rays[ray].k*cos(rays[ray].theta) + rays[ray].h/tan(rays[ray].theta))*(spin*rays[ray].k*cos(rays[ray].theta) - rays[ray].h/tan(rays[ray].theta));
 
-	m_rdot_sign[ray] = (rdot >= 0) ? 1 : -1;
-	m_thetadot_sign[ray] = (thetadot > 0) ? 1 : -1;
+	rays[ray].rdot_sign = (rdot >= 0) ? 1 : -1;
+	rays[ray].thetadot_sign = (thetadot > 0) ? 1 : -1;
 
-	//if(abs(rdot) < (1e-2 * e31)) m_steps[ray] = -1;
-//	if(abs(m_r[ray]*phidot/rdot) > 1e3) m_steps[ray] = -1;
+	//if(abs(rdot) < (1e-2 * e31)) rays[ray].steps = -1;
+//	if(abs(rays[ray].r*phidot/rdot) > 1e3) rays[ray].steps = -1;
 }
 
 template <typename T>
-inline void Raytracer<T>::CalculateConstantsFromP(int ray, T pt, T pr, T ptheta, T pphi)
+inline void Raytracer<T>::calculate_constants_from_p(int ray, T pt, T pr, T ptheta, T pphi)
 {
 	//
 	// calculate constants of motion from the 4-momentum and location of a photon
 	//
 	const T a = spin;
-	const T r = m_r[ray];
-	const T theta = m_theta[ray];
+	const T r = rays[ray].r;
+	const T theta = rays[ray].theta;
 
 	const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
 
@@ -555,9 +523,9 @@ inline void Raytracer<T>::CalculateConstantsFromP(int ray, T pt, T pr, T ptheta,
 
 	T Q = rhosq*rhosq*ptheta*ptheta - (a*k*cos(theta) + h/tan(theta))*(a*k*cos(theta) - h/tan(theta));
 	
-	m_k[ray] = k;
-	m_h[ray] = h;
-	m_Q[ray] = Q;
+	rays[ray].k = k;
+	rays[ray].h = h;
+	rays[ray].Q = Q;
 }
 
 
@@ -571,40 +539,40 @@ void Raytracer<T>::calculate_momentum( )
 
 	for(int ray = 0; ray < nRays; ray++)
 	{
-		const T t = m_t[ray];
-		const T r = m_r[ray];
-		const T theta = m_theta[ray];
-		const T phi = m_phi[ray];
-		const int rdot_sign = m_rdot_sign[ray];
-		const int thetadot_sign = m_thetadot_sign[ray];
+		const T t = rays[ray].t;
+		const T r = rays[ray].r;
+		const T theta = rays[ray].theta;
+		const T phi = rays[ray].phi;
+		const int rdot_sign = rays[ray].rdot_sign;
+		const int thetadot_sign = rays[ray].thetadot_sign;
 
-		const T k = m_k[ray];
-		const T h = m_h[ray];
-		const T Q = m_Q[ray];
+		const T k = rays[ray].k;
+		const T h = rays[ray].h;
+		const T Q = rays[ray].Q;
 
 		const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
 		const T delta = r*r - 2*r + a*a;
 
 		// tdot
-		m_pt[ray] = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
-		m_pt[ray] = m_pt[ray] / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
+		rays[ray].pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
+		rays[ray].pt = rays[ray].pt / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
 
 		// phidot
-		m_pphi[ray] = 2*a*r*sin(theta)*sin(theta)*k + (r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*h;
-		m_pphi[ray] = m_pphi[ray] / ( (r*r + a*a)*(r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
+		rays[ray].pphi = 2*a*r*sin(theta)*sin(theta)*k + (r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*h;
+		rays[ray].pphi = rays[ray].pphi / ( (r*r + a*a)*(r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
 
 		// thetadot
 		T thetadotsq = Q + (k*a*cos(theta) + h/tan(theta))*(k*a*cos(theta) - h/tan(theta));
 		thetadotsq = thetadotsq / (rhosq*rhosq);
 
 		// take the square roots and get the right signs
-		m_ptheta[ray] = sqrt(abs(thetadotsq)) * thetadot_sign;
+		rays[ray].ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
 
 		// rdot
-		T rdotsq = k*m_pt[ray] - h*m_pphi[ray] - rhosq*m_ptheta[ray]*m_ptheta[ray];
+		T rdotsq = k*rays[ray].pt - h*rays[ray].pphi - rhosq*rays[ray].ptheta*rays[ray].ptheta;
 		rdotsq = rdotsq * delta/rhosq;
 
-		m_pr[ray] = sqrt(abs(rdotsq)) * rdot_sign;
+		rays[ray].pr = sqrt(abs(rdotsq)) * rdot_sign;
 	}
 }
 

@@ -22,7 +22,7 @@ target_link_libraries(healpix_to_disc healpix_pointsource raytracer)
 add_executable(pointsource_to_disc pointsource_to_disc.cpp)
 target_link_libraries(pointsource_to_disc pointsource raytracer)
 
-add_executable(disc_source_photonfrac disc_source_photonfrac.cpp)
+add_executable(disc_source_photonfrac disc_source_photonfrac.cpp imageplane/imageplane_disc_image.cpp)
 target_link_libraries(disc_source_photonfrac pointsource raytracer)
 
 add_executable(disc_source_photonfrac_r disc_source_photonfrac_r.cpp)

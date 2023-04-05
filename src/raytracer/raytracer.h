@@ -17,6 +17,7 @@
 
 // set a default tolerance (precision used for variable integration step sizes)
 #define TOL 100
+#define PRECISION 100
 // set a default outer radius for ray propagation
 #define RLIM 1000
 
@@ -38,6 +39,18 @@ using namespace std;
 #include "../include/progress_bar.h"
 
 template <typename T>
+struct Ray
+{
+    T t, r, theta, phi;
+    T pt, pr, ptheta, pphi;
+    T k, h, Q;
+    T emit, redshift;
+    int steps;
+    int status;
+    int rdot_sign, thetadot_sign;
+};
+
+template <typename T>
 class Raytracer
 {
 protected:	// these members need to be accessible by derived classes to set up different X-ray sources
@@ -48,19 +61,12 @@ protected:	// these members need to be accessible by derived classes to set up d
 	float max_phistep;
 	float max_tstep;
 
-	// pointers for ray variables
-	T *m_t, *m_r, *m_theta, *m_phi;
-	T *m_pt, *m_pr, *m_ptheta, *m_pphi;
-	T *m_k, *m_h, *m_Q;
-	T *m_emit, *m_redshift;
-	int *m_steps;
-	int *m_status;
-	int *m_rdot_sign, *m_thetadot_sign;
-
-	inline void CalculateConstants(int ray, T alpha, T beta, T V, T E);
-	inline void CalculateConstantsFromP(int ray, T pt, T pr, T ptheta, T pphi);
+	inline void calculate_constants(int ray, T alpha, T beta, T V, T E);
+	inline void calculate_constants_from_p(int ray, T pt, T pr, T ptheta, T pphi);
 
 public:
+    Ray<T> *rays;
+
     Raytracer( int num_rays, float spin, float tol = TOL, float init_max_phistep = 0.1, float init_max_tstep = 1 );
     ~Raytracer( );
 
@@ -76,85 +82,6 @@ public:
     void range_phi(T min = -1 * M_PI, T max = M_PI);
 
     void calculate_momentum( );
-
-    T* get_time( )
-    {
-    	return m_t;
-    }
-
-    T* get_r( )
-    {
-    	return m_r;
-    }
-
-    T* get_theta( )
-    {
-    	return m_theta;
-    }
-
-    T* get_phi( )
-    {
-    	return m_phi;
-    }
-
-    int* get_steps( )
-    {
-    	return m_steps;
-    }
-
-    T* get_redshift( )
-    {
-    	return m_redshift;
-    }
-	int* get_status( )
-	{
-		return m_status;
-	}
-
-    void map_results(int*& p_steps, T*& p_t, T*& p_r, T*& p_theta, T*& p_phi, T*& p_redshift )
-    {
-    	//
-    	// Maps the pointers to the raytrace variable arrays for access by external code
-    	//
-    	p_steps = m_steps;
-    	p_t = m_t;
-    	p_r = m_r;
-    	p_theta = m_theta;
-    	p_phi = m_phi;
-    	p_redshift = m_redshift;
-    }
-    void map_results(int*& p_steps, T*& p_t, T*& p_r, T*& p_theta, T*& p_phi, T*& p_redshift, int* p_status )
-    {
-        //
-        // Maps the pointers to the raytrace variable arrays for access by external code
-        //
-        p_steps = m_steps;
-        p_t = m_t;
-        p_r = m_r;
-        p_theta = m_theta;
-        p_phi = m_phi;
-        p_redshift = m_redshift;
-        p_status = m_status;
-    }
-    void map_momentum(T*& p_pt, T*& p_pr, T*& p_ptheta, T*& p_pphi )
-    {
-    	//
-    	// Maps the pointers to the momentum variable arrays for access by external code
-    	//
-    	p_pt = m_pt;
-    	p_pr = m_pr;
-    	p_ptheta = m_ptheta;
-    	p_pphi = m_pphi;
-    }
-    void map_consts(T*& p_k, T*& p_Q, T*& p_h )
-    {
-    	//
-    	// Maps the pointers to the arrays containing the constants of motion for access by external code
-    	//
-    	p_k = m_k;
-    	p_Q = m_Q;
-    	p_h = m_h;
-    }
 
     int get_count( )
     {
