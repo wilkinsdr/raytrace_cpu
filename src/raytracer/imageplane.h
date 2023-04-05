@@ -18,6 +18,9 @@ private:
 	T incl;
 	T phi0;
 
+    T m_x0, m_xmax, m_dx;
+    T m_y0, m_ymax, m_dy;
+
 	int Nx, Ny;
 
 	T* m_plane_x;
@@ -32,6 +35,31 @@ public:
 	void redshift_start( );
 	void redshift(bool projradius);
 
+    inline int get_x_index(int ix)
+    {
+        //
+        // returns the index along the X direction of the 2D image place given the index of the 1D array element in raytracer variables
+        //
+        return (ix % (Nx*Ny));
+    }
+
+    inline int get_y_index(int ix)
+    {
+        //
+        // returns the index along the Y direction of the 2D image place given the index of the 1D array element in raytracer variables
+        //
+        return static_cast<int>( ix / (Nx*Ny));
+    }
+
+    inline T ray_x(int ix)
+    {
+        return m_x0 + get_x_index(ix) * m_dx;
+    }
+
+    inline T ray_y(int ix)
+    {
+        return m_y0 + get_y_index(ix) * m_dy;
+    }
 };
 
 #endif /* IMAGEPLANE_H_ */

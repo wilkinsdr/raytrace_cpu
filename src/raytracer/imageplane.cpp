@@ -14,7 +14,9 @@ ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy
 	        Ny(((ymax - y0) / dy) + 1),
 	        D(dist),
 	        incl(inc),
-	        phi0(phi)
+	        phi0(phi),
+            m_x0(x0), m_xmax(xmax), m_dx(dx),
+            m_y0(y0), m_ymax(ymax), m_dy(dy)
 {
 	m_plane_x = new T[Raytracer<T>::nRays];
 	m_plane_y = new T[Raytracer<T>::nRays];
@@ -95,7 +97,7 @@ void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
 			Raytracer<T>::rays[ix].pphi = pphi;
 
 			// calculate constants of motion
-			Raytracer<T>::CalculateConstantsFromP(ix, pt, pr, ptheta, pphi);
+			Raytracer<T>::calculate_constants_from_p(ix, pt, pr, ptheta, pphi);
 			Raytracer<T>::rays[ix].rdot_sign = -1;
 			Raytracer<T>::rays[ix].thetadot_sign = 1;
 

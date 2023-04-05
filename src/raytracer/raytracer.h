@@ -15,19 +15,27 @@
 #ifndef RAYTRACER_H_
 #define RAYTRACER_H_
 
-// set a default tolerance (precision used for variable integration step sizes)
-#define TOL 100
+// set a default precision used for variable integration step sizes based on distance from event horizon
 #define PRECISION 100
+//
+#define THETA_PRECISION 50
+// default maximum allowed step in co-ordinate time
+#define MAXDT 1
+// only obey this inside this radius so rays don't take ages a long way from the black hole
+#define MAXDT_RLIM 100
+// default maximum allowed step in phi
+#define MAXDPHI 0.1
 // set a default outer radius for ray propagation
 #define RLIM 1000
-
 // total number of steps allowed per ray before it's aborted
 #define STEPLIM 10000000
-//#define STEPLIM 1000
+// number of integration steps per GPU thread before integration is paused and kernel must be called again
+// to avoid thread time limits on GPUs running X servers
+#define THREAD_STEPLIM 10000000
 // smallest integration step  to prevent infinite loops of infinitesimal steps
-#define MIN_STEP 1E-6
-// minimum number of integration steps needed for a ray to be included in analysis
-#define COUNT_MIN 10000
+#define MIN_STEP 1E-3
+// minimum number of integration steps before sign of rdot and thetadot are allowed to change
+#define COUNT_MIN 100
 
 #include <iostream>
 #include <iomanip>

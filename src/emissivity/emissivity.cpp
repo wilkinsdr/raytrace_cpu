@@ -16,9 +16,6 @@ int main(int argc, char** argv)
 {
 	ParameterArgs par_args(argc, argv);
 
-	int *steps;
-	double *t, *r, *theta, *phi, *redshift;
-
 	// parameter configuration file
 	char default_par_filename[] = "../par/emissivity.par";
 	char *par_filename;
@@ -97,11 +94,11 @@ int main(int argc, char** argv)
 
 	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
 	{
-		if (steps[ray] > 0)
+		if (raytrace_source.rays[ray].steps > 0)
 		{
 		    double x, y, z;
 		    cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
-            if(z < 1E-2 && redshift[ray] > 0 && r[ray] >= r_isco)
+            if(z < 1E-2 && raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].r >= r_isco)
             {
                 int ir = (logbin_r) ? static_cast<int>( log(raytrace_source.rays[ray].r / r_min) / log(dr)) : static_cast<int>((raytrace_source.rays[ray].r - r_min) / dr);
 
@@ -115,7 +112,7 @@ int main(int argc, char** argv)
                     disc_flux[ir] += 1/(num_primary_rays * pow(raytrace_source.rays[ray].redshift,1));
 
                     // emissivity in the rest frame of the disc material
-                    disc_emis[ir] += 1/pow(redshift[ray],gamma);
+                    disc_emis[ir] += 1/pow(raytrace_source.rays[ray].redshift,gamma);
 
                     disc_redshift[ir] += raytrace_source.rays[ray].redshift;
                     disc_time[ir] += raytrace_source.rays[ray].t;

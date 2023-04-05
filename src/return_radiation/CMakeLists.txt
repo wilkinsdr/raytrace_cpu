@@ -1,0 +1,9 @@
+
+add_executable(disc_source_photonfrac return_radiation/disc_source_photonfrac.cpp imageplane/imageplane_disc_image.cpp)
+target_link_libraries(disc_source_photonfrac pointsource raytracer)
+
+add_executable(disc_source_photonfrac_r return_radiation/disc_source_photonfrac_r.cpp)
+target_link_libraries(disc_source_photonfrac_r pointsource raytracer)
+
+add_executable(disc_source_return_angdist return_radiation/disc_source_return_angdist.cpp)
+target_link_libraries(disc_source_return_angdist pointsource raytracer)

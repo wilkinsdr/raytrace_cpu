@@ -6,11 +6,11 @@ dat
 par
 
 # make sure we don't get the binaries in tests and util
-tests/*
+src/tests/*
 util/*
 !tests/*.*
 !util/*.*
-!tests/**/
+!src/tests/**/
 !util/**/
 
 # ignore cmake working files

@@ -10,8 +10,11 @@ include(CMakeLocal.txt)
 find_package(GSL REQUIRED)
 include_directories(${GSL_INCLUDE_DIRS})
 
-include_directories("${CMAKE_SOURCE_DIR}/src")
-add_subdirectory (src)
+# CFITSIO
+find_library(CFITSIO_LIBRARIES NAMES cfitsio)
+find_path(CFITSIO_INCLUDE_DIR fitsio.h PATH_SUFFIXES libcfitsio3 libcfitsio0 cfitsio)
+set(cfitsio_libs ${CFITSIO_LIBRARIES})
+include_directories(${CFITSIO_INCLUDE_DIR})
 
 # HDF5
 # HDF5_ROOT and HDF5_INCLUDE_DIRS need to come from CMakeLocal.txt
@@ -25,3 +28,6 @@ get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTO
 foreach(dir ${dirs})
     message(STATUS "dir='${dir}'")
 endforeach()
+
+include_directories("${CMAKE_SOURCE_DIR}/src")
+add_subdirectory (src)
