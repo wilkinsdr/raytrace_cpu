@@ -17,6 +17,7 @@
 
 // set a default precision used for variable integration step sizes based on distance from event horizon
 #define PRECISION 100
+#define TOL 100
 //
 #define THETA_PRECISION 50
 // default maximum allowed step in co-ordinate time
@@ -56,18 +57,23 @@ struct Ray
     int steps;
     int status;
     int rdot_sign, thetadot_sign;
+    T alpha, beta;
 };
 
 template <typename T>
 class Raytracer
 {
+private:
+    T precision;
+    T theta_precision;
+    T max_tstep;
+    T max_phistep;
+    T maxtstep_rlim;
+
 protected:	// these members need to be accessible by derived classes to set up different X-ray sources
 	int nRays;
 	T spin;
-	float tolerance;
-	float horizon;
-	float max_phistep;
-	float max_tstep;
+	T horizon;
 
 	inline void calculate_constants(int ray, T alpha, T beta, T V, T E);
 	inline void calculate_constants_from_p(int ray, T pt, T pr, T ptheta, T pphi);
@@ -75,7 +81,7 @@ protected:	// these members need to be accessible by derived classes to set up d
 public:
     Ray<T> *rays;
 
-    Raytracer( int num_rays, float spin, float tol = TOL, float init_max_phistep = 0.1, float init_max_tstep = 1 );
+    Raytracer( int num_rays, T spin, T precision = PRECISION, T init_max_phistep = MAXDPHI, T init_max_tstep = MAXDT );
     ~Raytracer( );
 
     void run_raytrace(T r_max = 1000, T theta_max = M_PI / 2, int show_progress = 1, TextOutput* outfile = 0
@@ -116,6 +122,28 @@ public:
     T calculate_horizon( )
     {
     	return kerr_horizon<T>(spin);
+    }
+
+    void set_precision(T precision)
+    {
+        precision = precision;
+    }
+
+    void set_precision(T precision = PRECISION, T theta_precision = THETA_PRECISION)
+    {
+        precision = precision;
+        theta_precision = theta_precision;
+    }
+
+    void set_max_tstep(T max, T rlim = MAXDT_RLIM)
+    {
+        max_tstep = max;
+        maxtstep_rlim = rlim;
+    }
+
+    void set_max_phistep(T max)
+    {
+        max_phistep = max;
     }
 
 };

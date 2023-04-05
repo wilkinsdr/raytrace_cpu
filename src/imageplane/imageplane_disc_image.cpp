@@ -119,8 +119,8 @@ int main(int argc, char **argv)
             if(z < 1E-2 && raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
                raytrace_source.rays[ray].redshift > 0)
             {
-                double x = raytrace_source.ray_x(ray);
-                double y = raytrace_source.ray_y(ray);
+                double x = raytrace_source.rays[ray].alpha;
+                double y = raytrace_source.rays[ray].beta;
                 int ix = static_cast<int>((x - x0) / img_dx);
                 int iy = static_cast<int>((y - y0) / img_dy);
 

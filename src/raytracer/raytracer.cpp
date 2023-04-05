@@ -8,12 +8,14 @@
 #include "raytracer.h"
 
 template <typename T>
-Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, float init_max_phistep, float init_max_tstep )
+Raytracer<T>::Raytracer( int num_rays, T spin_par, T init_precision, T init_max_phistep, T init_max_tstep )
 	: nRays( num_rays )
 	,  spin(spin_par)
-	, tolerance(toler)
+	, precision(init_precision)
+    , theta_precision(THETA_PRECISION)
 	, max_phistep(init_max_phistep)
 	, max_tstep(init_max_tstep)
+    , maxtstep_rlim(MAXDT_RLIM)
 {
 	//
 	// Constructor function - allocates host and device memory for each ray to store ray position, momentum,
@@ -32,7 +34,9 @@ Raytracer<T>::Raytracer( int num_rays, float spin_par, float toler, float init_m
 	horizon = kerr_horizon<T>(spin);
 	cout << "Event horizon at " << horizon << endl;
 
-	cout << "Allocating memory (" << nRays*sizeof(Ray<T>) << " B)" << endl;
+    int mb = 1<<20;
+
+	cout << "Allocating memory (" << nRays*sizeof(Ray<T>) / mb << "MB)" << endl;
     rays = new Ray<T>[nRays];
 
     for(int ray=0; ray<nRays; ray++)
@@ -182,16 +186,44 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 
 		pr = sqrt(abs(rdotsq)) * rdot_sign;
 
-		step = abs( (r-(T)horizon)/pr ) / tolerance;
-		// if the step is smaller in theta or phi (near 0/pi/2pi), use that instead
-		if( step > abs( theta/ptheta ) / tolerance ) step = abs( theta/ptheta ) / tolerance;
-		if( step > abs( phi/pphi ) / tolerance ) step = abs( phi/pphi ) / tolerance;
-//		if( step > abs( (phi - M_PI)/pphi ) / tol ) step = abs( (phi - M_PI)/pphi ) / tol;
-//		if( step > abs( (phi - 2*M_PI)/pphi ) / tol ) step = abs( (phi - 2*M_PI)/pphi ) / tol;
-		if( step > abs(max_tstep/pt) ) step = abs(max_tstep / pt);
-		if( step > abs(max_phistep/pphi) ) step = abs(max_phistep / pphi);
-		// don't let the step be stupidly small
-		if( step < MIN_STEP ) step = MIN_STEP;
+        step = abs((r - (T) horizon) / pr) / precision;
+        if(step > abs(theta / ptheta) / precision)
+        {
+            step = abs(theta / ptheta) / theta_precision;
+        }
+        if(max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
+        {
+            step = abs(max_tstep / pt);
+        }
+        if(max_phistep > 0 && step > abs(max_phistep / pphi))
+        {
+            step = abs(max_phistep / pphi);
+        }
+        // don't let the step be stupidly small
+        if(step < MIN_STEP) step = MIN_STEP;
+
+        // make sure we don't go past rlim
+        if(rlim > 0 && r + pr * step > rlim) step = abs((rlim - r) / pr);
+        // same for thetalim (but only if in range of r that would hit disc)
+        if(thetalim > 0 && theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+
+        // the code below is if we wanted to be able to trace rays below the disc (not implemented)
+//        if((!under) && thetalim > 0 && theta + ptheta * step > thetalim)
+//        {
+//            // would the new step size put us in the range of r for the disc?
+//            if(r_disc <= 0 || ((r + pr * abs((thetalim - theta) / ptheta)) < r_disc &&
+//                               (r + pr * abs((thetalim - theta) / ptheta)) > r_in))
+//                step = abs((thetalim - theta) / ptheta);
+//        }
+//        else if(r_disc > 0 && under && thetalim > 0 && theta + ptheta * step < (M_PI - thetalim))
+//        {
+//            if((r + pr * abs((thetalim - theta) / ptheta)) < r_disc &&
+//               (r + pr * abs((thetalim - theta) / ptheta)) > r_in)
+//                step = abs((thetalim - theta) / ptheta);
+//        }
+
+        // the code below is if we wanted to run rays backwards (not implemented)
+        //if(reverse) step *= -1;
 
 		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
 		if(pt <= 0)

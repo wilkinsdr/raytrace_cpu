@@ -8,8 +8,8 @@
 #include "imageplane.h"
 
 template <typename T>
-ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T tol, T phi )
-	: Raytracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , tol ),
+ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T phi, T precision )
+	: Raytracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , precision ),
 	        Nx(((xmax - x0) / dx) + 1),
 	        Ny(((ymax - y0) / dy) + 1),
 	        D(dist),
@@ -18,19 +18,15 @@ ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy
             m_x0(x0), m_xmax(xmax), m_dx(dx),
             m_y0(y0), m_ymax(ymax), m_dy(dy)
 {
-	m_plane_x = new T[Raytracer<T>::nRays];
-	m_plane_y = new T[Raytracer<T>::nRays];
-
 	cout << "Setting up image plane with (" << Nx << 'x' << Ny << ") rays" << endl;
 	init_image_plane(D, incl * M_PI / 180, phi0, x0, xmax, dx, y0, ymax, dy);
 }
 
-template <typename T>
-ImagePlane<T>::~ImagePlane()
-{
-	delete[] m_plane_x;
-	delete[] m_plane_y;
-}
+//template <typename T>
+//ImagePlane<T>::~ImagePlane()
+//{
+//
+//}
 
 template <typename T>
 void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
@@ -117,6 +113,9 @@ void ImagePlane<T>::init_image_plane(T D, T incl, T phi0,
 			Raytracer<T>::rays[ix].thetadot_sign = (ltheta>=0) ? 1 : -1;
 			
 			Raytracer<T>::rays[ix].steps = 0;
+
+            Raytracer<T>::rays[ix].alpha = x;
+            Raytracer<T>::rays[ix].beta = y;
 		}
 	}
 }

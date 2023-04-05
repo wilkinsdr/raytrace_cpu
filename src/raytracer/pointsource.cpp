@@ -16,19 +16,15 @@ PointSource<T>::PointSource( T* pos, T V, T spin, T tol, T dcosalpha, T dbeta, T
 	n_cosalpha = ((cosalphamax - cosalpha0) / dcosalpha) + 1;
 	n_beta = ((betamax - beta0) / dbeta) + 1;
 
-	m_cosalpha = new T[Raytracer<T>::nRays];
-	m_beta = new T[Raytracer<T>::nRays];
-
 	cout << "Setting up point source with " << Raytracer<T>::nRays << " rays" << endl;
     init_pointsource(pos, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 }
 
-template <typename T>
-PointSource<T>::~PointSource()
-{
-	delete[] m_cosalpha;
-	delete[] m_beta;
-}
+//template <typename T>
+//PointSource<T>::~PointSource()
+//{
+//
+//}
 
 template <typename T>
 void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0, T cosalphamax, T beta0, T betamax )
@@ -38,19 +34,19 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 		{
 			int ix = i*n_beta + j;
 
-			m_cosalpha[ix] = cosalpha0 + i*dcosalpha;
-			m_beta[ix] = beta0 + j*dbeta;
+			const T cosalpha = cosalpha0 + i*dcosalpha;
+			const T beta = beta0 + j*dbeta;
 
-			if(m_cosalpha[ix] >= cosalphamax || m_beta[ix] >= betamax)
+			if(cosalpha >= cosalphamax || beta >= betamax)
 			{
 				Raytracer<T>::rays[ix].steps = -1;
 				continue;
 			}
 
-			const T alpha = acos(m_cosalpha[ix]);
+			const T alpha = acos(cosalpha);
 
-//			Raytracer<T>::m_rdot_sign[ix] = (alpha < M_PI/2) ? 1 : -1;
-//			Raytracer<T>::m_thetadot_sign[ix] = (abs(m_beta[ix]) < M_PI/2) ? 1 : -1;
+            Raytracer<T>::rays[ix].alpha = cosalpha;
+            Raytracer<T>::rays[ix].beta = beta;
 
 			// initialise position of photon
 			Raytracer<T>::rays[ix].t = pos[0];
@@ -63,7 +59,7 @@ void PointSource<T>::init_pointsource(T* pos, T dcosalpha, T dbeta, T cosalpha0,
 			Raytracer<T>::rays[ix].pphi = 0;
 			Raytracer<T>::rays[ix].steps = 0;
 			// calculate constants of motion
-			Raytracer<T>::calculate_constants(ix, alpha, m_beta[ix], velocity, energy);
+			Raytracer<T>::calculate_constants(ix, alpha, beta, velocity, energy);
 		}
 }
 

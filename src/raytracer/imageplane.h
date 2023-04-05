@@ -23,12 +23,9 @@ private:
 
 	int Nx, Ny;
 
-	T* m_plane_x;
-	T* m_plane_y;
-
 public:
-	ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T tol, T phi = 0);
-	~ImagePlane();
+	ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T phi, T precision = PRECISION);
+//	~ImagePlane();
 
 	void init_image_plane(T D, T incl, T phi0, T x0, T xmax, T dx, T y0, T ymax, T dy);
 
@@ -40,7 +37,7 @@ public:
         //
         // returns the index along the X direction of the 2D image place given the index of the 1D array element in raytracer variables
         //
-        return (ix % (Nx*Ny));
+        return static_cast<int>( ix / Ny );
     }
 
     inline int get_y_index(int ix)
@@ -48,7 +45,7 @@ public:
         //
         // returns the index along the Y direction of the 2D image place given the index of the 1D array element in raytracer variables
         //
-        return static_cast<int>( ix / (Nx*Ny));
+        return ix % Ny;
     }
 
     inline T ray_x(int ix)
