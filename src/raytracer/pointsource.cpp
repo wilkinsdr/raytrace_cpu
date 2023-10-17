@@ -73,13 +73,13 @@ void PointSource<T>::redshift_start( )
 }
 
 template <typename T>
-void PointSource<T>::redshift(T V )
+void PointSource<T>::redshift(RayDestination<T>* destination, T V)
 {
 	//
 	// Call the redshift_start function of the base class using the angular velocity for a circular orbit at the ray's end point
 	// for rays incident on the accretion disc
 	//
-    Raytracer<T>::redshift(V);
+    Raytracer<T>::redshift(destination, V);
 }
 
 template class PointSource<double>;

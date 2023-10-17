@@ -79,16 +79,21 @@ int main(int argc, char** argv)
 
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
+    EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
+
     raytrace_source.redshift_start();
-    raytrace_source.run_raytrace(rmax, M_PI_2, show_progress);
+    //raytrace_source.run_raytrace(rmax, M_PI_2, show_progress);
+    raytrace_source.run_raytrace(my_destination, 1.1 * dist); 
     raytrace_source.range_phi();
-    raytrace_source.redshift(-1);
+    //raytrace_source.redshift(-1);
+    raytrace_source.redshift(my_destination, -1);
 
     raytrace_source.map_results(steps, t, r, theta, phi, redshift);
 
     for(int ray=0; ray<raytrace_source.get_count(); ray++)
     {
-        if(steps[ray] > 0 && theta[ray] > M_PI_2 - 1E-2 && r[ray] >= r_min && r[ray] < r_disc)
+        //if(steps[ray] > 0 && theta[ray] > M_PI_2 - 1E-2 && r[ray] >= r_min && r[ray] < r_disc)
+        if(steps[ray] > 0 && my_destination->stopping_fn(r, theta, phi, spin && r[ray] >= r_min && r[ray] < r_disc)
         {
             const int ir = (logbin_r) ? static_cast<int>( log(r[ray] / r_min) / log(dr)) : static_cast<int>((r[ray] - r_min) / dr);
 

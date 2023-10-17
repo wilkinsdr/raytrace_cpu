@@ -6,6 +6,9 @@
  */
 
 #include "raytracer.h"
+#include "raytrace_destination.h"
+#include "vector"
+
 
 template <typename T>
 Raytracer<T>::Raytracer( int num_rays, T spin_par, T init_precision, T init_max_phistep, T init_max_tstep )
@@ -42,7 +45,7 @@ Raytracer<T>::Raytracer( int num_rays, T spin_par, T init_precision, T init_max_
     for(int ray=0; ray<nRays; ray++)
     {
 	    rays[ray].steps = -1;
-	    rays[ray].status = 0;
+	    //rays[ray].status = 0;
     }
 }
 
@@ -57,8 +60,54 @@ Raytracer<T>::~Raytracer( )
 	delete[] rays;
 }
 
+// T t = rays[ray].t;
+//        T r = rays[ray].r;
+//        T theta = rays[ray].theta;
+//        T phi = rays[ray].phi;
+//        T pt = rays[ray].pt;
+//        T pr = rays[ray].pr;
+//        T ptheta = rays[ray].ptheta;
+//        T pphi = rays[ray].pphi;
+//        int rdot_sign = rays[ray].rdot_sign;
+//        int thetadot_sign = rays[ray].thetadot_sign;
+//
+//        const T k = rays[ray].k;
+//        const T h = rays[ray].h;
+//        const T Q = rays[ray].Q;
+
+//template<typename T>
+//void Raytracer<T>::ray_sort(const int threads)
+//{
+//    rays_1 = new Ray<T>[nRays];
+//
+//    for (int i = 0; i < nRays; ++i) {
+//        int index = i % threads;
+//        rays_new_order[index].t = rays[i].t;
+//
+//    }
+//
+//    int ind = 0;
+//    for (int ray_index = 0; ray_index < nRays / threads; ++ray_index) {
+//        for (int index = 0; index < threads; ++index) {
+//            rays[ind] = ray_groups[index][ray_index];
+//            ++ind;
+//        }
+//    }
+//}
+
+//
+//    for (int i = 0; i < threads; ++i) {
+//        const int startIndex = i * raysPerThread;
+//        for (int j = 0; j < raysPerThread; ++j) {
+//            const int sourceIndex = j + startIndex;
+//            const int targetIndex = sourceIndex + raysPerThread;
+//            rays[targetIndex] = raysPerThreadArray[i][j];
+//        }
+//    }
+//}
+
 template <typename T>
-void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+void Raytracer<T>::run_raytrace(RayDestination<T>* destination, T r_max, T rad_disc, int show_progress, int status, T rad_in, T z_min, T bound, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
 	//
 	// Runs the ray tracing algorithm once the rays have been set up.
@@ -79,24 +128,332 @@ void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOut
 
 	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
     show_progress = abs(show_progress);
+//    #pragma omp parallel for
 	for(int ray=0; ray<nRays; ray++)
 	{
         if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
-	    if(rays[ray].steps < 0) continue;
+
+//        int thread_num = omp_get_thread_num();
+//        cout << "ray number " << ray << " running on thread " << thread_num << endl;
+
+        if(rays[ray].steps < 0) continue;
 		else if(rays[ray].steps >= STEPLIM) continue;
 
-		int n;
-		n = propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-		//rays[ray].steps += n;
+		//int n;
+		//n = propagate(destination, ray, r_max, status, rad_disc, rad_in, z_min, bound,STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+		T rlim = r_max;
+        T ray_status = status;
+        T r_disc = rad_disc;
+        T r_in = rad_in;
+        T boundary = bound;
+        T steplim = STEPLIM;
+
+
+
+        //
+        // propagate the photon along its geodesic until limiting r or theta reached
+        //
+        int steps = 0;
+
+        int rsign_count = COUNT_MIN;
+        int thetasign_count = COUNT_MIN;
+
+        T rhosq, delta;
+        T rdotsq, thetadotsq;
+
+        T step;
+
+        T x, y, z;
+
+        // copy variables locally to simplify the code
+        T a = spin;
+        T t = rays[ray].t;
+        T r = rays[ray].r;
+        T theta = rays[ray].theta;
+        T phi = rays[ray].phi;
+        T pt = rays[ray].pt;
+        T pr = rays[ray].pr;
+        T ptheta = rays[ray].ptheta;
+        T pphi = rays[ray].pphi;
+        int rdot_sign = rays[ray].rdot_sign;
+        int thetadot_sign = rays[ray].thetadot_sign;
+
+        const T k = rays[ray].k;
+        const T h = rays[ray].h;
+        const T Q = rays[ray].Q;
+
+        bool write_started = false;
+
+        bool rdotsign_unlocked = false;
+        bool thetadotsign_unlocked = false;
+
+        bool under;
+
+        // integrate geodesic equations until limit reached
+        // if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
+        //while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
+        while(r < rlim  &&  steps < steplim)
+        {
+            ++steps;
+
+            //const T thetalim = destination->get_thetalim(r, theta, phi, a);
+            //T under = destination->under_function(r, theta);
+
+            if(destination->stopping_fn(r, theta, phi, a)) {
+                rays[ray].status = RAY_STOP_DEST;
+                break;
+            }
+
+            rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+            delta = r*r - 2*r + a*a;
+
+            // tdot
+            pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
+            pt = pt / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
+
+            // phidot
+            pphi = 2*a*r*sin(theta)*sin(theta)*k + (r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*h;
+            pphi = pphi / ( (r*r + a*a)*(r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
+
+            // thetadot
+            thetadotsq = Q + (k*a*cos(theta) + h/tan(theta))*(k*a*cos(theta) - h/tan(theta));
+            thetadotsq = thetadotsq / (rhosq*rhosq);
+
+            if(thetadotsq < 0 && thetasign_count >= COUNT_MIN)
+            {
+                thetadot_sign *= -1;
+                thetasign_count = 0;
+                continue;
+            }
+            if (thetasign_count <= COUNT_MIN) thetasign_count++;
+
+            // take the square roots and get the right signs
+            ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
+
+            // rdot
+            rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
+            rdotsq = rdotsq * delta/rhosq;
+
+            if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+            {
+                rdot_sign *= -1;
+                rsign_count = 0;
+                //continue;
+            }
+            else
+            {
+                rsign_count++;
+                rdotsign_unlocked = true;
+            }
+
+            pr = sqrt(abs(rdotsq)) * rdot_sign;
+
+            
+	    step = abs((r - (T) horizon) / pr) / precision;
+
+            if(step > abs(theta / ptheta) / precision)
+            {
+                step = abs(theta / ptheta) / theta_precision;
+            }
+            if(max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
+            {
+                step = abs(max_tstep / pt);
+            }
+            if(max_phistep > 0 && step > abs(max_phistep / pphi))
+            {
+                step = abs(max_phistep / pphi);
+            }
+
+
+            // don't let the step be stupidly small
+            if(step < MIN_STEP) step = MIN_STEP;
+
+            // make sure we don't go past rlim
+            if(rlim > 0 && r + pr * step > rlim) step = abs((rlim - r) / pr);
+
+            if(theta < 0)
+            {
+                theta *= -1;
+                phi += M_PI;
+                thetadot_sign *= -1;
+            }
+
+            if(step == 0)
+            {
+                rays[ray].status = 6;
+                break;
+            }
+//        if(r <= horizon)
+//        {
+//            rays[ray].status = RAY_STOP_HORIZON;
+//            break;
+//        }
+            if(rlim > 0 && r >= rlim)
+            {
+                rays[ray].status = RAY_STOP_RLIM;
+                break;
+            }
+//        if(r_disc > 0 && thetalim > 0)
+//        {
+//            if(((!under) && theta >= thetalim) || (under && theta <= (M_PI - thetalim)))
+//            {
+//                if(r < r_disc && r >= r_in)
+//                {
+//                    rays[ray].status = RAY_STOP_DEST;
+//                    break;
+//                }
+//            }
+//        }
+//        else if(thetalim > 0 && theta >= thetalim)
+//        {
+//            rays[ray].status = RAY_STOP_DEST;
+//            break;
+//        }
+//        if(thetalim < 0 && thetalim > -4 && theta <= abs(thetalim))
+//        {
+//            rays[ray].status = RAY_STOP_DEST;
+//            break;
+//        }
+//        if(zlim > 0 && r_disc > 0)
+//        {
+//            T z = r * cos(theta);
+//            if(r < r_disc && r >= r_in)
+//                if(abs(z) <= zlim)
+//                {
+//                    rays[ray].status = RAY_STOP_ZLIM;
+//                    break;
+//                }
+//        }
+//        else if(zlim > 0)
+//        {
+//            T z = r * cos(theta);
+//            if(abs(z) <= zlim)
+//            {
+//                rays[ray].status = RAY_STOP_ZLIM;
+//                break;
+//            }
+//        }
+//        if(boundary > 0 && r <= boundary) {
+//            rays[ray].status = RAY_STOP_BOUND;
+//            break;
+//        }
+
+
+            // same for thetalim (but only if in range of r that would hit disc)
+
+            //if(M_PI/4.0 > 0 && theta + ptheta * step > M_PI/4.0) step = abs((M_PI/4.0 - theta) / ptheta);
+
+            // step condition
+            //if(thetalim > 0 && theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+            //
+	  
+
+	    //if (theta + ptheta * step > M_PI_2) step = abs((M_PI_2 - theta) / ptheta);
+            //bool flag = false;
+
+        //step = destination->step_function(r, theta, phi, step, ptheta, pr, pphi, r_disc, a);
+        if(step < MIN_STEP) step = MIN_STEP;
+
+            //cout << step << endl;
+          // if (step > destination->step_function(r, theta, phi, step, ptheta, a)) {
+	//	step = destination->step_function(r, theta, phi, step, ptheta, a);
+	  // }
+
+            // the code below is if we wanted to be able to trace rays below the disc (not implemented)
+//        if((!under) && thetalim > 0 && theta + ptheta * step > thetalim)
+//        {
+//            // would the new step size put us in the range of r for the disc?
+//            if(r_disc <= 0 || ((r + pr * abs((thetalim - theta) / ptheta)) < r_disc &&
+//                               (r + pr * abs((thetalim - theta) / ptheta)) > r_in))
+//                step = abs((thetalim - theta) / ptheta);
+//        }
+//        else if(r_disc > 0 && under && thetalim > 0 && theta + ptheta * step < (M_PI - thetalim))
+//        {
+//            if((r + pr * abs((thetalim - theta) / ptheta)) < r_disc &&
+//               (r + pr * abs((thetalim - theta) / ptheta)) > r_in)
+//                step = abs((thetalim - theta) / ptheta);
+//        }
+
+            // the code below is if we wanted to run rays backwards (not implemented)
+            //if(reverse) step *= -1;
+
+            // throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+            if(pt <= 0)
+            {
+                rays[ray].status = -2;
+                rays[ray].steps = -1;
+                break;
+            }
+
+            // calculate new position
+//            if (flag){
+//                t += pt*step;
+//                r += pr*step;
+//                phi += pphi*step;
+//            } else {
+                t += pt*step;
+                r += pr*step;
+                theta += ptheta*step;
+                phi += pphi*step;
+//            }
+//            t += pt*step;
+//            r += pr*step;
+//            theta += ptheta*step;
+//            phi += pphi*step;
+
+            //aff += step;
+
+            if(r <= horizon) break;
+
+            if(outfile != 0 && (steps % write_step) == 0 )
+            {
+                if((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )
+                {
+                    write_started = true;
+                    if(write_cartesian)
+                    {
+                        cartesian<T>(x, y, z, r, theta, phi, a);
+                        (*outfile) << t << x << y << z << endl;
+                    }
+                    else
+                    {
+                        (*outfile) << t << r << theta << phi << endl;
+                    }
+                }
+                else if(write_started)
+                {
+                    break;
+                }
+            }
+        }
+
+        rays[ray].t = t;
+        rays[ray].r = r;
+        rays[ray].theta = theta;
+        rays[ray].phi = phi;
+        rays[ray].pt = pt;
+        rays[ray].pr = pr;
+        rays[ray].ptheta = ptheta;
+        rays[ray].pphi = pphi;
+        rays[ray].rdot_sign = rdot_sign;
+        rays[ray].rdot_sign = thetadot_sign;
+
+        if(steps > 0) rays[ray].steps += steps;
+
+
+
+
+
+        //rays[ray].steps += n;
 
 		if(outfile != 0)
 			outfile->newline(2);
 	}
-    prog.done();
+//    prog.done();
 }
 
 template <typename T>
-inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
+inline int Raytracer<T>::propagate(RayDestination<T>* destination, int ray, const T rlim, int ray_status, const T r_disc, const T r_in, const T zlim, const T boundary, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian )
 {
 	//
 	// propagate the photon along its geodesic until limiting r or theta reached
@@ -135,12 +492,23 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 	bool rdotsign_unlocked = false;
 	bool thetadotsign_unlocked = false;
 
+    bool under;
+
 	// integrate geodesic equations until limit reached
 	// if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
-	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
-	//while( r < rlim  && theta < thetalim  &&  steps < steplim )
+    //while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
+    while(r < rlim  &&  steps < steplim)
 	{
-		++steps;
+        ++steps;
+
+        //const T thetalim = destination->get_thetalim(r, theta, phi, a);
+        //T under = destination->under_function(r, theta);
+
+
+        if(destination->stopping_fn(r, theta, phi, a)) {
+            rays[ray].status = RAY_STOP_DEST;
+            break;
+        }
 
 		rhosq = r*r + (a*cos(theta))*(a*cos(theta));
 		delta = r*r - 2*r + a*a;
@@ -203,9 +571,86 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
         if(step < MIN_STEP) step = MIN_STEP;
 
         // make sure we don't go past rlim
-        if(rlim > 0 && r + pr * step > rlim) step = abs((rlim - r) / pr);
+         if(rlim > 0 && r + pr * step > rlim) step = abs((rlim - r) / pr);
+
+        if(theta < 0)
+        {
+            theta *= -1;
+            phi += M_PI;
+            thetadot_sign *= -1;
+        }
+
+        if(step == 0)
+        {
+            rays[ray].status = 6;
+            break;
+        }
+//        if(r <= horizon)
+//        {
+//            rays[ray].status = RAY_STOP_HORIZON;
+//            break;
+//        }
+        if(rlim > 0 && r >= rlim)
+        {
+            rays[ray].status = RAY_STOP_RLIM;
+            break;
+        }
+//        if(r_disc > 0 && thetalim > 0)
+//        {
+//            if(((!under) && theta >= thetalim) || (under && theta <= (M_PI - thetalim)))
+//            {
+//                if(r < r_disc && r >= r_in)
+//                {
+//                    rays[ray].status = RAY_STOP_DEST;
+//                    break;
+//                }
+//            }
+//        }
+//        else if(thetalim > 0 && theta >= thetalim)
+//        {
+//            rays[ray].status = RAY_STOP_DEST;
+//            break;
+//        }
+//        if(thetalim < 0 && thetalim > -4 && theta <= abs(thetalim))
+//        {
+//            rays[ray].status = RAY_STOP_DEST;
+//            break;
+//        }
+//        if(zlim > 0 && r_disc > 0)
+//        {
+//            T z = r * cos(theta);
+//            if(r < r_disc && r >= r_in)
+//                if(abs(z) <= zlim)
+//                {
+//                    rays[ray].status = RAY_STOP_ZLIM;
+//                    break;
+//                }
+//        }
+//        else if(zlim > 0)
+//        {
+//            T z = r * cos(theta);
+//            if(abs(z) <= zlim)
+//            {
+//                rays[ray].status = RAY_STOP_ZLIM;
+//                break;
+//            }
+//        }
+//        if(boundary > 0 && r <= boundary) {
+//            rays[ray].status = RAY_STOP_BOUND;
+//            break;
+//        }
+
+
         // same for thetalim (but only if in range of r that would hit disc)
-        if(thetalim > 0 && theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+
+        //if(M_PI/4.0 > 0 && theta + ptheta * step > M_PI/4.0) step = abs((M_PI/4.0 - theta) / ptheta);
+
+        // step condition
+        //if(thetalim > 0 && theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+//        if (step > destination->step_function(r, theta, phi, step, ptheta, a)) {
+//	     step = destination->step_function(r, theta, phi, step, ptheta, a);
+//	}
+	// destination->step_function(r, theta, phi, step, ptheta, a);
 
         // the code below is if we wanted to be able to trace rays below the disc (not implemented)
 //        if((!under) && thetalim > 0 && theta + ptheta * step > thetalim)
@@ -228,7 +673,7 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
 		if(pt <= 0)
 		{
-			rays[ray].status = -2;
+			//rays[ray].status =sort_rays -2;
             rays[ray].steps = -1;
 			break;
 		}
@@ -340,10 +785,12 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 
 		// timelike basis vector
 		const T et[] = { (1/sqrt(e2nu))/sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu)
-							, 0 , 0 ,
-							(1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
+                            , 0 , 0 ,
+                            (1/sqrt(e2nu))*V / sqrt(1 - (V - omega)*(V - omega)*e2psi/e2nu) };
 
-		// photon momentum
+
+
+        // photon momentum
         momentum_from_consts<T>(p[0], p[1], p[2], p[3], rays[ray].k, rays[ray].h, rays[ray].Q, rays[ray].rdot_sign,
                                 rays[ray].thetadot_sign, rays[ray].r, rays[ray].theta, rays[ray].phi, spin);
 
@@ -360,7 +807,7 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
 
 
 template <typename T>
-void Raytracer<T>::redshift(T V, bool reverse, bool projradius, int motion )
+void Raytracer<T>::redshift(RayDestination<T>* destination, T V, bool reverse, bool projradius, int motion )
 {
 	//
 	// Calculates the redshift of the ray (emitted / received energy).
@@ -384,13 +831,13 @@ void Raytracer<T>::redshift(T V, bool reverse, bool projradius, int motion )
 
 	for(int ray=0; ray<nRays; ray++)
 	{
-		rays[ray].redshift = ray_redshift(V, reverse, projradius, rays[ray].r, rays[ray].theta, rays[ray].phi, rays[ray].k, rays[ray].h, rays[ray].Q, rays[ray].rdot_sign, rays[ray].thetadot_sign, rays[ray].emit, motion);
+		rays[ray].redshift = ray_redshift(destination, V, reverse, projradius, rays[ray].r, rays[ray].theta, rays[ray].phi, rays[ray].k, rays[ray].h, rays[ray].Q, rays[ray].rdot_sign, rays[ray].thetadot_sign, rays[ray].emit, motion);
 	}
 }
 
 
 template <typename T>
-inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion )
+inline T Raytracer<T>::ray_redshift(RayDestination<T>* destination, T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion )
 {
 	// calculate the redshift of a single ray
 
@@ -419,29 +866,7 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 
 	T et[] = {0, 0, 0, 0};
 
-	if(motion == 0)
-	{
-		// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
-		if (V == -1 && projradius)
-			V = 1 / (spin +
-			         r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
-		else if (V == -1)
-			V = 1 / (spin + r * sqrt(r));
-
-		// if(reverse) V = -1;
-
-		// timelike basis vector
-		et[0] = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
-		et[3] = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
-	}
-	else if(motion == 1)
-	{
-		// if v < 0, use the speed relative to the local speed of light
-		if(V < 0) V = abs(V) * (r*r - 2*r + spin+spin) / (r*r + spin*spin);
-
-		et[0] = 1. / sqrt(g[0*4+0] + g[1*4+1]*V*V);
-		et[1] = V * et[0];
-	}
+    destination->velocity_fn(et[0], et[1], et[2], et[3], r, theta, phi, spin, h, k);
 
 	// photon momentum
     momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);

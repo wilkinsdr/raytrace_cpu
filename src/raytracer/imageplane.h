@@ -24,13 +24,18 @@ private:
 	int Nx, Ny;
 
 public:
-	ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T phi, T precision = PRECISION);
+	ImagePlane(T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T phi, T precision = PRECISION);
 //	~ImagePlane();
+
+//    void ray_sort(const int threads, T rays[]);
 
 	void init_image_plane(T D, T incl, T phi0, T x0, T xmax, T dx, T y0, T ymax, T dy);
 
+//    void init_log_imageplane(T dist, T incl, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, int quad = 0, T phi0 = 0,
+//                       T excise = 0, T precision = PRECISION, T max_tstep = MAXDT);
+
 	void redshift_start( );
-	void redshift(bool projradius);
+	void redshift(RayDestination<T>* destination, bool projradius);
 
     inline int get_x_index(int ix)
     {
