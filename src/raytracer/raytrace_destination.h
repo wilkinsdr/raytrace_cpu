@@ -323,10 +323,6 @@ public:
     }
 };
 
-
-
-
-
 template <typename T>
 class TorusDiscDestination:
         public RayDestination<T> {
@@ -451,22 +447,12 @@ public:
         cartesian(x, y, z, r, theta, phi, spin);
         T h = (r_inner + major_axis);
         T val = sqrt(x*x + y*y);
-//	if (r <= r_inner) {
-//             return theta >= M_PI_2;
-//	} else
+
 	if (r >= r_inner && r <= (r_inner + 2*major_axis)) {
 	     return z <= sqrt(minor_axis*minor_axis*(1 - ((val-h)*(val-h))/(major_axis*major_axis)));	
 	} else if (r > r_inner && r > (r_inner + 2*major_axis)) {
 	     return theta >= M_PI_2;
-	}
-     //   return z <= sqrt(minor_axis*minor_axis*(1 - ((val-h)*(val-h))/(major_axis*major_axis)));
-//        if (r <= r_inner) {
-//            return theta >= M_PI_2;
-//        } else if (r <= (r_disc - r_inner - major_axis - major_axis)) {
-//	    return z <= sqrt(minor_axis*minor_axis*(1 - ((val-h)*(val-h))/(major_axis*major_axis)));
-//	} else {
-//            return theta >= M_PI_2;
-//        }
+    }
     }
 
     void velocity_fn(T& vt, T& vr, T& vtheta, T& vphi, T r, T theta, T phi, T spin, T h, T k) {
@@ -491,6 +477,55 @@ public:
         } else {
             return step;
         }
+    }
+};
+
+
+template <typename T>
+class ShakuraDiscDestination:
+        public RayDestination<T> {
+private:
+    T efficiency;
+    T edd_frac;
+    T r_isco;
+public:
+    ShakuraDiscDestination(T efficiency_val, T edd_frac_val, T r_isco_val) {
+        efficiency = efficiency_val;
+        edd_frac = edd_frac_val;
+        r_isco = r_isco_val;
+    }
+
+    bool stopping_fn(T r, T theta, T phi, T spin) {
+        double x, y, z;
+        cartesian(x, y, z, r, theta, phi, spin);
+        return z <= (3/2)*(1/efficiency)*(edd_frac)*(1 - sqrt(r_isco/(r*sin(theta))));
+    }
+
+    void velocity_fn(T& vt, T& vr, T& vtheta, T& vphi, T r, T theta, T phi, T spin, T h, T k) {
+        const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
+        const T delta = r*r - 2*r + spin*spin;
+        const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+
+        const T e2nu = rhosq * delta / sigmasq;
+        const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
+        const T omega = 2*spin*r / sigmasq;
+
+        const T V = 1 / (spin + (r*sin(theta)) * sqrt(r*sin(theta)));
+
+        vt = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+        vphi = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+    }
+
+    double step_function(T r, T theta, T phi, T step, T ptheta, T pr, T pphi, T r_disc, T spin) {
+        //double x, y, z;
+        //cartesian(x, y, z, r, theta, phi, spin);
+        //double dz = pr* cos(theta) - r*sin(theta)*ptheta;
+        //double zlim = 3.3;
+        //if (z + dz * step > zlim) step = abs((zlim - z) / dz);
+        double thetalim;
+        thetalim = acos((-3*0.35)*(1-sqrt(r_isco/r)/(2*M_PI*r)));
+        if (theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+        return step;
     }
 };
 

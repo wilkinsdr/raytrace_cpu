@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     double beta0 = par_file.get_parameter<double>("beta0", -1*M_PI);
     double betamax = par_file.get_parameter<double>("betamax", M_PI);
     double dbeta = par_file.get_parameter<double>("dbeta");
-	int show_progress = (par_args.key_exists("--show_progress")) ? par_args.get_parameter<int>("--show_progress")
+	int show_f = (par_args.key_exists("--show_progress")) ? par_args.get_parameter<int>("--show_progress")
 	                                        : par_file.get_parameter<int>("show_progress", 1);
 	double r_max = par_file.get_parameter<double>("r_esc", 1000);
     double r_min = (par_args.key_exists("--rmin")) ? par_args.get_parameter<double>("--rmin")

@@ -526,18 +526,7 @@ int main(int argc, char **argv)
     cout << "Spin a = " << spin << endl;
     cout << "*****" << endl << endl;
 
-//    double img_dx = (xmax - x0) / img_Nx;
-//    double img_dy = (ymax - y0) / img_Ny;
-
     int disc_count = 0;
-
-//    Array2D<double> disc_flux(img_Nx, img_Ny);
-//    Array2D<double> disc_r(img_Nx, img_Ny);
-//    Array2D<double> disc_phi(img_Nx, img_Ny);
-//    Array2D<double> disc_enshift(img_Nx, img_Ny);
-//    Array2D<double> disc_time(img_Nx, img_Ny);
-//    Array2D<double> disc_emis(img_Nx, img_Ny);
-//    Array2D<int> disc_Nrays(img_Nx, img_Ny);
 
     Array2D<double> disc_flux(full_Nx, full_Ny);
     Array2D<double> disc_r(full_Nx, full_Ny);
@@ -549,8 +538,6 @@ int main(int argc, char **argv)
     Array2D<double> disc_x(full_Nx, full_Ny);
     Array2D<double> disc_y(full_Nx, full_Ny);
     Array2D<double> disc_weight(full_Nx, full_Ny);
-//    Array2D<double> disc_angle1(img_Nx, img_Ny);
-//    Array2D<double> disc_angle2(img_Nx, img_Ny);
 
     disc_flux.zero();
     disc_r.zero();
@@ -568,13 +555,6 @@ int main(int argc, char **argv)
     double r_isco = kerr_isco<double>(spin, +1);
     cout << "ISCO at " << r_isco << endl;
 
-//    int threads = 1;
-//    omp_set_num_threads(8);
-//    #pragma omp parallel
-//    threads = omp_get_num_threads();
-//    cout << "Threads " << threads << endl;
-
-
     LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, 0);
     int num = raytrace_source.get_count();
     std::vector<double> xValues(4*num);
@@ -582,8 +562,6 @@ int main(int argc, char **argv)
     std::vector<double> zValues(4*num);
 
     for(int quad=0; quad<4; quad++) {
-        //LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0,
-        //                                      precision);
         int quad_count = 0;
 
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
@@ -591,11 +569,12 @@ int main(int argc, char **argv)
 
 
         //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4, r_angle_disc_dis);
+        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI / 6, M_PI / 6, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
+        ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 1, r_isco);
 
 
         raytrace_source.redshift_start();
@@ -630,28 +609,23 @@ int main(int argc, char **argv)
                 double xx, yy, zz;
                 cartesian(xx, yy, zz, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta,
                           raytrace_source.rays[ray].phi, spin);
-                //            if(z < 1E-2 && raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
-                //               raytrace_source.rays[ray].redshift > 0)
+                if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
+                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
+//                    if (raytrace_source.rays[ray].r > 50 && !(zz >= 3.28 && zz <= 3.3)) {
+//                        break;
+//                    }
+                        xValues[disc_count] = xx;  //  saving the positions of the rays into a file
+                        yValues[disc_count] = yy;
+                        zValues[disc_count] = zz;
 
-//                if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
-//                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
-//                  if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
-//                        raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST && yy*sin(M_PI_4) + zz*cos(M_PI_4) <= 0){
-                if (raytrace_source.rays[ray].r >= 20.1 && raytrace_source.rays[ray].r < r_disc &&
-                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST){
-
-                    xValues[disc_count] = xx;  //  saving the positions of the rays into a file
-                    yValues[disc_count] = yy;
-                    zValues[disc_count] = zz;
-
-                    double x = raytrace_source.rays[ray].alpha;
-                    double y = raytrace_source.rays[ray].beta;
+                        double x = raytrace_source.rays[ray].alpha;
+                        double y = raytrace_source.rays[ray].beta;
 
 //                    ix = ray % (Nx - 1);
 //                    iy = ray / (Nx - 1);
 
-                    ix = ray / (Ny - 1.1);
-                    iy = ray % (Ny - 1);
+                        ix = ray / (Ny - 1.1);
+                        iy = ray % (Ny - 1);
 
 //                    ix = static_cast<int>( (x - x0)/dx ); //+ static_cast<int>(log(x0/x0) / log(dx));
 //                    iy = static_cast<int>( (y - y0)/dy ); //+ static_cast<int>(log(y0/y0) / log(dy));
@@ -661,36 +635,36 @@ int main(int argc, char **argv)
 
 //                    cout << "X val image " << ix << " Y val image " << iy << endl;
 
-                    //ix = RaytraceSource->GetXIndex(ray) + static_cast<int>( log(run_x0/x0) / log(dx));
-                    //iy = RaytraceSource->GetYIndex(ray) + static_cast<int>( log(run_y0/y0) / log(dy));
+                        //ix = RaytraceSource->GetXIndex(ray) + static_cast<int>( log(run_x0/x0) / log(dx));
+                        //iy = RaytraceSource->GetYIndex(ray) + static_cast<int>( log(run_y0/y0) / log(dy));
 
-                    // the x and y indices within the full grid (remember that Nx and Ny are the midpoints of the grid)
-                    full_ix = (quad == 0 || quad == 3) ? Nx + ix : Nx - ix;
-                    full_iy = (quad == 0 || quad == 1) ? Ny + iy : Ny - iy;
+                        // the x and y indices within the full grid (remember that Nx and Ny are the midpoints of the grid)
+                        full_ix = (quad == 0 || quad == 3) ? Nx + ix : Nx - ix;
+                        full_iy = (quad == 0 || quad == 1) ? Ny + iy : Ny - iy;
 //                    full_ix = Nx + ix;
 //                    full_iy = Ny + iy;
 
 //                    cout << "X val image " << full_ix << " Y val image " << full_iy << endl;
 
-                    double energy = 1 / raytrace_source.rays[ray].redshift;
-                    //double emis = powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3);
+                        double energy = 1 / raytrace_source.rays[ray].redshift;
+                        //double emis = powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3);
 
-                    if(full_ix >=0  && full_ix < full_Nx  &&  full_iy >=0  &&  full_iy < full_Ny)
-                    {
-                        disc_emis[full_ix][full_iy] = powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3);
-                        disc_r[full_ix][full_iy] = raytrace_source.rays[ray].r;
-                        disc_phi[full_ix][full_iy] = raytrace_source.rays[ray].phi;
+                        if (full_ix >= 0 && full_ix < full_Nx && full_iy >= 0 && full_iy < full_Ny) {
+                            disc_emis[full_ix][full_iy] = powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3);
+                            disc_r[full_ix][full_iy] = raytrace_source.rays[ray].r;
+                            disc_phi[full_ix][full_iy] = raytrace_source.rays[ray].phi;
 //                        disc_x[full_ix][full_ix] = raytrace_source.rays[ray].alpha;
 //                        disc_y[full_ix][full_ix] = raytrace_source.rays[ray].beta;
-                        disc_weight[full_ix][full_iy] = raytrace_source.rays[ray].weight;
-                        disc_enshift[full_ix][full_iy] = energy;
-                        disc_flux[full_ix][full_iy] = powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3) * energy * energy;
-                        disc_time[full_ix][full_iy] = raytrace_source.rays[ray].t;
-                        ++disc_Nrays[full_ix][full_iy];
-                    }
+                            disc_weight[full_ix][full_iy] = raytrace_source.rays[ray].weight;
+                            disc_enshift[full_ix][full_iy] = energy;
+                            disc_flux[full_ix][full_iy] =
+                                    powerlaw3(raytrace_source.rays[ray].r, q1, rb1, q2, rb2, q3) * energy * energy;
+                            disc_time[full_ix][full_iy] = raytrace_source.rays[ray].t;
+                            ++disc_Nrays[full_ix][full_iy];
+                        }
 
-                    ++quad_count;
-                    ++disc_count;
+                        ++quad_count;
+                        ++disc_count;
 
 
 //                    double x = raytrace_source.rays[ray].alpha;
@@ -716,6 +690,7 @@ int main(int argc, char **argv)
 //                    //disc_angle1[ix][iy] += (180 / M_PI) * raytrace_source.rays[ray].angle1;
 //                    //disc_angle2[ix][iy] += (180 / M_PI) * raytrace_source.rays[ray].angle2;
 //                    ++disc_count;
+                   // }
                 }
             }
         }
