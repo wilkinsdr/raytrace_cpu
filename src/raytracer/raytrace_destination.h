@@ -76,13 +76,13 @@ public:
         cartesian(x, y, z, r, theta, phi, spin);
         if (0 < phi && phi <= M_PI) {
             if (r < r_inner) {
-                return theta >= M_PI / 2;
+                return theta >= M_PI_2;
             } else {
-                return y*sin(thetalim_1) + z*cos(thetalim_1) <= 0; // make condition for width;
+                return y*sin(thetalim_1) + z*cos(thetalim_1) <= 0;
             }
         } else {
             if (r < r_inner) {
-                return theta >= M_PI / 2;
+                return theta >= M_PI_2;
             } else {
                 return y*sin(thetalim_2) + z*cos(thetalim_2) <= 0;
             }

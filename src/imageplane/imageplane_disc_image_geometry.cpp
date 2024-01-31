@@ -128,10 +128,11 @@ double powerlaw3(double r, double q1, double rb1, double q2, double rb2, double 
 //    //raytrace_source.set_max_tstep(max_tstep);
 //
 //    //ZDestination<double>* my_destination = new ZDestination<double>(M_PI/2, r_disc);
-//    AngledDiscsDestination<double>* my_destination = new AngledDiscsDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
+//    //AngledDiscsDestination<double>* my_destination = new AngledDiscsDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
 //    //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
 //    //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
 //    //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
+//    ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
 //
 //
 //    raytrace_source.redshift_start();
@@ -172,7 +173,7 @@ double powerlaw3(double r, double q1, double rb1, double q2, double rb2, double 
 ////               raytrace_source.rays[ray].redshift > 0)
 //            //  if(raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
 //            //   raytrace_source.rays[ray].redshift > 0)
-//            if (raytrace_source.rays[ray].r >= 20.1 && raytrace_source.rays[ray].r < r_disc &&
+//            if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
 //                raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
 //                xValues[ray] = xx;  //  saving the positions of the rays into a file
 //                yValues[ray] = yy;
@@ -402,44 +403,44 @@ double powerlaw3(double r, double q1, double rb1, double q2, double rb2, double 
 //    fits.write_keyword("DY", "Y step", dy);
 //    fits.write_keyword("NY", "Number of pixels in Y", Ny);
 //    fits.write_keyword("YUNIT", "Units of Y axis", "RG");
-////
 //
-////    fits.write_image(disc_angle1, img_Nx, img_Ny, false);
-////    fits.set_ext_name("ANGLE1");
-////    fits.write_comment("Angle of ray to disc normal");
-////    fits.write_keyword("AXIS1", "Quantity along X axis of image", "Image plane X");
-////    fits.write_keyword("AXIS2", "Quantity along Y axis of image", "Image plane Y");
-////    fits.write_keyword("PIXVAL", "Pixel value quantity", "ANGLE1");
-////    fits.write_keyword("PIXUNIT", "Pixel value unit", "deg");
-////    fits.write_keyword("X0", "Start of X axis", x0);
-////    fits.write_keyword("XMAX", "End of X axis", xmax);
-////    fits.write_keyword("DX", "X step", dx);
-////    fits.write_keyword("NX", "Number of pixels in X", img_Nx);
-////    fits.write_keyword("XUNIT", "Units of X axis", "RG");
-////    fits.write_keyword("Y0", "Start of Y axis", y0);
-////    fits.write_keyword("YMAX", "End of Y axis", ymax);
-////    fits.write_keyword("DY", "Y step", dy);
-////    fits.write_keyword("NY", "Number of pixels in Y", img_Ny);
-////    fits.write_keyword("YUNIT", "Units of Y axis", "RG");
-////
-////    fits.write_image(disc_angle2, img_Nx, img_Ny, false);
-////    fits.set_ext_name("ANGLE1");
-////    fits.write_comment("Angle of ray to outward");
-////    fits.write_keyword("AXIS1", "Quantity along X axis of image", "Image plane X");
-////    fits.write_keyword("AXIS2", "Quantity along Y axis of image", "Image plane Y");
-////    fits.write_keyword("PIXVAL", "Pixel value quantity", "ANGLE2");
-////    fits.write_keyword("PIXUNIT", "Pixel value unit", "deg");
-////    fits.write_keyword("X0", "Start of X axis", x0);
-////    fits.write_keyword("XMAX", "End of X axis", xmax);
-////    fits.write_keyword("DX", "X step", dx);
-////    fits.write_keyword("NX", "Number of pixels in X", img_Nx);
-////    fits.write_keyword("XUNIT", "Units of X axis", "RG");
-////    fits.write_keyword("Y0", "Start of Y axis", y0);
-////    fits.write_keyword("YMAX", "End of Y axis", ymax);
-////    fits.write_keyword("DY", "Y step", dy);
-////    fits.write_keyword("NY", "Number of pixels in Y", img_Ny);
-////    fits.write_keyword("YUNIT", "Units of Y axis", "RG");
+
+//    fits.write_image(disc_angle1, img_Nx, img_Ny, false);
+//    fits.set_ext_name("ANGLE1");
+//    fits.write_comment("Angle of ray to disc normal");
+//    fits.write_keyword("AXIS1", "Quantity along X axis of image", "Image plane X");
+//    fits.write_keyword("AXIS2", "Quantity along Y axis of image", "Image plane Y");
+//    fits.write_keyword("PIXVAL", "Pixel value quantity", "ANGLE1");
+//    fits.write_keyword("PIXUNIT", "Pixel value unit", "deg");
+//    fits.write_keyword("X0", "Start of X axis", x0);
+//    fits.write_keyword("XMAX", "End of X axis", xmax);
+//    fits.write_keyword("DX", "X step", dx);
+//    fits.write_keyword("NX", "Number of pixels in X", img_Nx);
+//    fits.write_keyword("XUNIT", "Units of X axis", "RG");
+//    fits.write_keyword("Y0", "Start of Y axis", y0);
+//    fits.write_keyword("YMAX", "End of Y axis", ymax);
+//    fits.write_keyword("DY", "Y step", dy);
+//    fits.write_keyword("NY", "Number of pixels in Y", img_Ny);
+//    fits.write_keyword("YUNIT", "Units of Y axis", "RG");
 //
+//    fits.write_image(disc_angle2, img_Nx, img_Ny, false);
+//    fits.set_ext_name("ANGLE1");
+//    fits.write_comment("Angle of ray to outward");
+//    fits.write_keyword("AXIS1", "Quantity along X axis of image", "Image plane X");
+//    fits.write_keyword("AXIS2", "Quantity along Y axis of image", "Image plane Y");
+//    fits.write_keyword("PIXVAL", "Pixel value quantity", "ANGLE2");
+//    fits.write_keyword("PIXUNIT", "Pixel value unit", "deg");
+//    fits.write_keyword("X0", "Start of X axis", x0);
+//    fits.write_keyword("XMAX", "End of X axis", xmax);
+//    fits.write_keyword("DX", "X step", dx);
+//    fits.write_keyword("NX", "Number of pixels in X", img_Nx);
+//    fits.write_keyword("XUNIT", "Units of X axis", "RG");
+//    fits.write_keyword("Y0", "Start of Y axis", y0);
+//    fits.write_keyword("YMAX", "End of Y axis", ymax);
+//    fits.write_keyword("DY", "Y step", dy);
+//    fits.write_keyword("NY", "Number of pixels in Y", img_Ny);
+//    fits.write_keyword("YUNIT", "Units of Y axis", "RG");
+
 //    fits.close();
 //
 //    cout << "Done" << endl;
@@ -447,7 +448,7 @@ double powerlaw3(double r, double q1, double rb1, double q2, double rb2, double 
 //    return 0;
 //}
 
-// main for log start of rays
+
 int main(int argc, char **argv)
 {
     ParameterArgs par_args(argc, argv);
@@ -472,15 +473,12 @@ int main(int argc, char **argv)
     double plane_phi0 = par_file.get_parameter<double>("plane_phi0", 0);
     double spin = (par_args.key_exists("--spin")) ? par_args.get_parameter<double>("--spin")
                                                   : par_file.get_parameter<double>("spin");
-    int num_threads = par_file.get_parameter<int>("num_threads");
 
     double r_disc = par_file.get_parameter<double>("r_disc");   // radial distance that the disc spans
     double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
     double r_torus = par_file.get_parameter<double>("r_torus");   // radius of the torus
 
-    // double theta_lim_1 = par_file.get_parameter<double>("theta_lim_1");   // limiting theta value of the part of the warped disc to the left of the x-z plane at origin
-    // double theta_lim_2 = par_file.get_parameter<double>("theta_lim_2");   // limiting theta value of the part of the warped disc to the right of the x-z plane at origin
-
+    double theta_lim = par_file.get_parameter<double>("theta_lim");   // limiting theta value of the part of the warped disc, looking down the y axis at origin
     double major_axis = par_file.get_parameter<double>("major_axis");   // major axis size for ellipse geometry
     double minor_axis = par_file.get_parameter<double>("minor_axis");   // minor axis size for ellipse geometry
 
@@ -500,18 +498,10 @@ int main(int argc, char **argv)
     double precision = par_file.get_parameter<double>("precision", PRECISION);
     double max_tstep = par_file.get_parameter<double>("max_tstep", MAXDT);
     bool flip_image = par_file.get_parameter<bool>("flip_image", true);
-
-//    double dx = (xmax - x0) / Nx;
-//    double dy = (ymax - y0) / Ny;
+    int geometry = par_file.get_parameter<int>("geometry", 0);
 
     double dx = exp(log(xmax/x0)/(Nx));
     double dy = exp(log(ymax/y0)/(Ny));
-
-//    double dx = (log(xmax - x0) / log(Nx));
-//    double dy = (log(ymax - y0) / log(Ny));
-
-//    double dx = (xmax/x0)*exp(1/(Nx-1));
-//    double dy = (ymax/y0)*exp(1/(Ny-1));
 
     int ix, iy, full_ix, full_iy;
 
@@ -549,8 +539,6 @@ int main(int argc, char **argv)
     disc_x.zero();
     disc_y.zero();
     disc_weight.zero();
-//    disc_angle1.zero();
-//    disc_angle2.zero();
 
     double r_isco = kerr_isco<double>(spin, +1);
     cout << "ISCO at " << r_isco << endl;
@@ -567,14 +555,13 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-
-        //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
+        //ZDestination<double>* my_destination = new ZDestination<double>(theta, r_disc);
         //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI / 6, M_PI / 6, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
-        //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
+        EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-        ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 1, r_isco);
+        //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
 
 
         raytrace_source.redshift_start();
@@ -611,9 +598,6 @@ int main(int argc, char **argv)
                           raytrace_source.rays[ray].phi, spin);
                 if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
                     raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
-//                    if (raytrace_source.rays[ray].r > 50 && !(zz >= 3.28 && zz <= 3.3)) {
-//                        break;
-//                    }
                         xValues[disc_count] = xx;  //  saving the positions of the rays into a file
                         yValues[disc_count] = yy;
                         zValues[disc_count] = zz;

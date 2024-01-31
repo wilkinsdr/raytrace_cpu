@@ -54,6 +54,9 @@ int main(int argc, char** argv)
     double dist = par_file.get_parameter<double>("dist");
     double major_axis = par_file.get_parameter<double>("major_axis");
     double minor_axis = par_file.get_parameter<double>("minor_axis");
+    double thetalim = par_file.get_parameter<double>("thetalim");
+    double geometry = par_file.get_parameter<double>("geometry");
+
 
     //double r_disc = par_file.get_parameter<double>("r_disc");
 
@@ -98,8 +101,9 @@ int main(int argc, char** argv)
     //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
     EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
     //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
+    //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
 
-	raytrace_source.redshift_start();
+    raytrace_source.redshift_start();
 	raytrace_source.run_raytrace(my_destination, 1.1 * dist, r_disc);
 	raytrace_source.range_phi();
 	raytrace_source.redshift(my_destination, -1);
