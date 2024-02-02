@@ -95,11 +95,11 @@ int main(int argc, char** argv)
 
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
-    //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
+    ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
     //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4, r_angle_disc_dis);
     //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
     //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
-    EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
+    //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
     //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
     //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
 
