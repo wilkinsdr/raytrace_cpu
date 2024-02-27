@@ -352,7 +352,7 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* destination, T r_max, T rad_d
 
         //step = destination->step_function(r, theta, phi, step, ptheta, pr, pphi, r_disc, spin);
 
-//            step = step / 48;
+            step = step / 48;
             if(step < MIN_STEP) step = MIN_STEP;
 
             //cout << step << endl;
