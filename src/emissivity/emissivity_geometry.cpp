@@ -52,6 +52,10 @@ int main(int argc, char** argv)
     double gamma = par_file.get_parameter<double>("gamma", 2);
     double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
     double dist = par_file.get_parameter<double>("dist");
+
+    double efficiency = par_file.get_parameter<double>("efficiency");
+    double edd = par_file.get_parameter<double>("edd"); // accretion rate
+
     double major_axis = par_file.get_parameter<double>("major_axis");
     double minor_axis = par_file.get_parameter<double>("minor_axis");
     double thetalim = par_file.get_parameter<double>("thetalim");
@@ -95,13 +99,13 @@ int main(int argc, char** argv)
 
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
-    //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
+    ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
     //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4, r_angle_disc_dis);
     //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
     //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
     //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
     //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-    ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
+    //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(0.35, 0.3, r_isco);
 
     raytrace_source.redshift_start();
 	raytrace_source.run_raytrace(my_destination, 1.1 * dist, r_disc);
