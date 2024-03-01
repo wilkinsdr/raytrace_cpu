@@ -558,13 +558,13 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-        //ZDestination<double>* my_destination = new ZDestination<double>(theta_lim, r_disc);
+        ZDestination<double>* my_destination = new ZDestination<double>(theta_lim, r_disc);
         //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI / 3, M_PI / 3, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-        ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
+        //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
 
 
         raytrace_source.redshift_start();
