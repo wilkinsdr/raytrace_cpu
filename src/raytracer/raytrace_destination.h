@@ -58,6 +58,50 @@ public:
 };
 
 template <typename T>
+class DelayedFlaredDisc:
+        public RayDestination<T> {
+private:
+    T thetalim;
+    T rlim;
+    T break_r;
+public:
+    DelayedFlaredDisc(T thetalim_val, T r_lim_val, T break_radius) {
+        thetalim = thetalim_val;
+        rlim = r_lim_val;
+        break_r = break_radius;
+    }
+
+    bool stopping_fn(T r, T theta, T phi, T spin) {
+        if (r < break_r) {
+            return theta >= M_PI_2;
+        } else {
+            return theta >= thetalim;
+        }
+    }
+
+    void velocity_fn(T& vt, T& vr, T& vtheta, T& vphi, T r, T theta, T phi, T spin, T h, T k) {
+        const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
+        const T delta = r*r - 2*r + spin*spin;
+        const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+
+        const T e2nu = rhosq * delta / sigmasq;
+        const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
+        const T omega = 2*spin*r / sigmasq;
+
+        const T V = 1 / (spin + r * sqrt(r));
+
+        vt = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+        vphi = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
+    }
+
+    T step_function(T r, T theta, T phi, T step, T ptheta) {
+        if (thetalim > 0 && theta + ptheta * step > thetalim) {
+            return abs((thetalim - theta) / ptheta);
+        }
+    }
+};
+
+template <typename T>
 class AngledDiscsDestination:
         public RayDestination<T> {
 private:
