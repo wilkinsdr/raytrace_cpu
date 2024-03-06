@@ -559,8 +559,8 @@ int main(int argc, char **argv)
         //raytrace_source.set_max_tstep(max_tstep);
 
         //ZDestination<double>* my_destination = new ZDestination<double>(theta_lim, r_disc);
-        //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(theta_lim, r_disc, r_angle_disc_dis);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_2/2, M_PI_2/2, r_angle_disc_dis);
+        DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(theta_lim, r_disc, r_angle_disc_dis);
+        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_2/2, M_PI_2/2, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
