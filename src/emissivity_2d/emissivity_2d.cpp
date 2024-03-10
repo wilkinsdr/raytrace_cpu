@@ -36,14 +36,15 @@ int main(int argc, char** argv)
     double V = par_file.get_parameter<double>("V", 0);
     double spin = (par_args.key_exists("--spin")) ? par_args.get_parameter<double>("--spin")
                                                   :  par_file.get_parameter<double>("spin");
-    double cosalpha0 = par_file.get_parameter<double>("cosalpha0", -0.995);
-    double cosalphamax = par_file.get_parameter<double>("cosalphamax", 0.995);
+    double cosalpha0 = par_file.get_parameter<double>("cosalpha0", -0.9999);
+    double cosalphamax = par_file.get_parameter<double>("cosalphamax", 0.9999);
     double dcosalpha = par_file.get_parameter<double>("dcosalpha");
     double beta0 = par_file.get_parameter<double>("beta0", -1*M_PI);
     double betamax = par_file.get_parameter<double>("betamax", M_PI);
     double dbeta = par_file.get_parameter<double>("dbeta");
     int show_progress = (par_args.key_exists("--show_progress")) ? par_args.get_parameter<int>("--show_progress")
                                                                  : par_file.get_parameter<int>("show_progress", 1);
+    int runs = par_file.get_parameter<int>("runs", 4);
     double r_max = par_file.get_parameter<double>("r_esc", 1000);
     double r_min = (par_args.key_exists("--rmin")) ? par_args.get_parameter<double>("--rmin")
                                                    :  par_file.get_parameter<double>("rmin", -1);
@@ -82,9 +83,8 @@ int main(int argc, char** argv)
     Array2D<double> disc_redshift(Nr, Nphi);
     Array2D<double> disc_time(Nr, Nphi);
 
-    for(int ir=0; ir<Nr; ir++)
-    {
-        for(int ip=0; ip<Nphi; ip++) {
+    for (int ir = 0; ir < Nr; ir++) {
+        for (int ip = 0; ip < Nphi; ip++) {
             disc_r[ir][ip] = (logbin_r) ? r_min * pow(dr, ir) : r_min + ir * dr;
             disc_area[ir][ip] = integrate_disc_area(disc_r[ir][ip], (logbin_r) ? disc_r[ir][ip] * dr : dr, spin);
 
@@ -97,53 +97,62 @@ int main(int argc, char** argv)
         }
     }
 
-    PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
+    double run_dcosalpha = (cosalphamax - cosalpha0) / runs;
 
-    //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
-    AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4, r_angle_disc_dis);
-    //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
-    //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
-    //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
-    //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
+    for(int run=1; run <= runs; run++) {
+        double run_cosalpha0 = cosalpha0 + (run-1)*run_dcosalpha;
+        double run_cosalphamax = ((run_cosalpha0 + run_dcosalpha) < cosalphamax) ? (run_cosalpha0 + run_dcosalpha) : cosalphamax;
 
-    raytrace_source.redshift_start();
-    raytrace_source.run_raytrace(my_destination, 1.1 * dist, r_disc);
-    raytrace_source.range_phi();
-    raytrace_source.redshift(my_destination, -1);
-    raytrace_source.range_phi();
+        PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, run_cosalpha0, run_cosalphamax, beta0,
+                                            betamax);
 
-    for (int ray = 0; ray < raytrace_source.get_count(); ray++)
-    {
-        if (raytrace_source.rays[ray].steps > 0)
-        {
-            double x, y, z;
-            cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
-            {
-                int ir = (logbin_r) ? static_cast<int>( log(raytrace_source.rays[ray].r / r_min) / log(dr)) : static_cast<int>((raytrace_source.rays[ray].r - r_min) / dr); //r*sintheta
-                int iphi = static_cast<int>(abs(raytrace_source.rays[ray].phi - M_PI) / dphi);
+        //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
+        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4,
+                                                                                            r_angle_disc_dis);
+        //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
+        //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
+        //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
+        //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
 
-                //cout << raytrace_source.rays[ray].phi << endl;
-                //cout << iphi << " " << abs(raytrace_source.rays[ray].phi - M_PI) / dphi << " " << raytrace_source.rays[ray].phi << endl;
-                //cout << ir << " " << abs(raytrace_source.rays[ray].r - r_min) / dr << " " << raytrace_source.rays[ray].r << endl;
+        raytrace_source.redshift_start();
+        raytrace_source.run_raytrace(my_destination, 1.1 * dist, r_disc);
+        raytrace_source.range_phi();
+        raytrace_source.redshift(my_destination, -1);
+        raytrace_source.range_phi();
 
-                if(ir >= 0 && ir < Nr) {
-                    if (iphi >= 0 && iphi < Nphi) {
-                        ++disc_rays[ir][iphi];
+        for (int ray = 0; ray < raytrace_source.get_count(); ray++) {
+            if (raytrace_source.rays[ray].steps > 0) {
+                double x, y, z;
+                cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta,
+                          raytrace_source.rays[ray].phi, spin);
+                {
+                    int ir = (logbin_r) ? static_cast<int>( log(raytrace_source.rays[ray].r / r_min) / log(dr))
+                                        : static_cast<int>((raytrace_source.rays[ray].r - r_min) / dr); //r*sintheta
+                    int iphi = static_cast<int>(abs(raytrace_source.rays[ray].phi - M_PI) / dphi);
 
-                        // primary flux to work out returning radiation normalisation
-                        // fraction of rays from the primary source hitting this part of the disc
-                        // multiplied by the redshift to obtain the photon arrival rate in the rest frame
-                        disc_flux[ir][iphi] += 1 / (num_primary_rays * pow(raytrace_source.rays[ray].redshift, 1));
+                    //cout << raytrace_source.rays[ray].phi << endl;
+                    //cout << iphi << " " << abs(raytrace_source.rays[ray].phi - M_PI) / dphi << " " << raytrace_source.rays[ray].phi << endl;
+                    //cout << ir << " " << abs(raytrace_source.rays[ray].r - r_min) / dr << " " << raytrace_source.rays[ray].r << endl;
 
-                        // emissivity in the rest frame of the disc material
-                        disc_emis[ir][iphi] += 1 / pow(raytrace_source.rays[ray].redshift, gamma);
+                    if (ir >= 0 && ir < Nr) {
+                        if (iphi >= 0 && iphi < Nphi) {
+                            ++disc_rays[ir][iphi];
 
-                        disc_redshift[ir][iphi] += raytrace_source.rays[ray].redshift;
-                        disc_time[ir][iphi] += raytrace_source.rays[ray].t;
+                            // primary flux to work out returning radiation normalisation
+                            // fraction of rays from the primary source hitting this part of the disc
+                            // multiplied by the redshift to obtain the photon arrival rate in the rest frame
+                            disc_flux[ir][iphi] += 1 / (num_primary_rays * pow(raytrace_source.rays[ray].redshift, 1));
+
+                            // emissivity in the rest frame of the disc material
+                            disc_emis[ir][iphi] += 1 / pow(raytrace_source.rays[ray].redshift, gamma);
+
+                            disc_redshift[ir][iphi] += raytrace_source.rays[ray].redshift;
+                            disc_time[ir][iphi] += raytrace_source.rays[ray].t;
+                        }
                     }
-                }
 
-                ++disc_count;
+                    ++disc_count;
+                }
             }
         }
     }
