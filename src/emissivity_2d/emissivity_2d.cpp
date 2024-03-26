@@ -107,7 +107,7 @@ int main(int argc, char** argv)
                                             betamax);
 
         //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4, M_PI_4,
+        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4/3, M_PI_4/3,
                                                                                             r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
