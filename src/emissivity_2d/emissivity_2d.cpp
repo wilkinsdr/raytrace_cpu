@@ -33,11 +33,19 @@ int main(int argc, char** argv)
     string out_filename = (par_args.key_exists("--outfile")) ? par_args.get_parameter<string>("--outfile")
                                                              : par_file.get_parameter<string>("outfile");
     par_file.get_parameter_array("source", source, 4);
+    if (par_args.key_exists("--corona_height")) {
+        source[1] = par_args.get_parameter<double>("--corona_height");
+    }
+    if (par_args.key_exists("--phi")) {
+        source[3] = par_args.get_parameter<double>("--phi");
+    }
     double V = par_file.get_parameter<double>("V", 0);
     double spin = (par_args.key_exists("--spin")) ? par_args.get_parameter<double>("--spin")
                                                   :  par_file.get_parameter<double>("spin");
-    double cosalpha0 = par_file.get_parameter<double>("cosalpha0", -0.9999);
-    double cosalphamax = par_file.get_parameter<double>("cosalphamax", 0.9999);
+    double cosalpha0 = (par_args.key_exists("--cosalpha0")) ? par_args.get_parameter<double>("--cosalpha0")
+                                                  :  par_file.get_parameter<double>("cosalpha0", -0.9999);
+    double cosalphamax = (par_args.key_exists("--cosalphamax")) ? par_args.get_parameter<double>("--cosalphamax")
+                                                            :  par_file.get_parameter<double>("cosalphamax", 0.9999);
     double dcosalpha = par_file.get_parameter<double>("dcosalpha");
     double beta0 = par_file.get_parameter<double>("beta0", -1*M_PI);
     double betamax = par_file.get_parameter<double>("betamax", M_PI);
@@ -57,10 +65,14 @@ int main(int argc, char** argv)
     double r_disc = par_file.get_parameter<double>("r_esc", 500);
     bool logbin_r = par_file.get_parameter<bool>("logbin_r", true);
     double gamma = par_file.get_parameter<double>("gamma", 2);
-    double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
+    //double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
+    double r_angle_disc_dis = (par_args.key_exists("--r_angle_disc_dis")) ? par_args.get_parameter<double>("--r_angle_disc_dis")
+                                                                :  par_file.get_parameter<double>("r_angle_disc_dis", 10);
+    double outer_disc_incl = (par_args.key_exists("--outer_disc_incl")) ? par_args.get_parameter<double>("--outer_disc_incl")
+                                                                          :  par_file.get_parameter<double>("outer_disc_incl", 0.0001);
     double dist = par_file.get_parameter<double>("dist");
 
-    if (par_args.key_exists("--source_h")) source[1] = par_args.get_parameter<double>("--source_h");
+    //if (par_args.key_exists("--source_h")) source[1] = par_args.get_parameter<double>("--source_h");
 
     const double r_isco = kerr_isco<double>(spin, +1);
     if(r_min < 0) r_min = r_isco;
@@ -107,7 +119,7 @@ int main(int argc, char** argv)
                                             betamax);
 
         //ZDestination<double>* my_destination = new ZDestination<double>(M_PI_2, r_disc);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(M_PI_4/3, M_PI_4/3,
+        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(outer_disc_incl, outer_disc_incl,
                                                                                             r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
