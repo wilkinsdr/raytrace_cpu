@@ -31,11 +31,19 @@ int main(int argc, char** argv)
 	string out_filename = (par_args.key_exists("--outfile")) ? par_args.get_parameter<string>("--outfile")
 	                                                         : par_file.get_parameter<string>("outfile");
 	par_file.get_parameter_array("source", source, 4);
+    if (par_args.key_exists("--corona_height")) {
+        source[1] = par_args.get_parameter<double>("--corona_height");
+    }
+    if (par_args.key_exists("--phi")) {
+        source[3] = par_args.get_parameter<double>("--phi");
+    }
 	double V = par_file.get_parameter<double>("V", 0);
 	double spin = (par_args.key_exists("--spin")) ? par_args.get_parameter<double>("--spin")
 	                                              :  par_file.get_parameter<double>("spin");
-    double cosalpha0 = par_file.get_parameter<double>("cosalpha0", -0.995);
-    double cosalphamax = par_file.get_parameter<double>("cosalphamax", 0.995);
+    double cosalpha0 = (par_args.key_exists("--cosalpha0")) ? par_args.get_parameter<double>("--cosalpha0")
+                                                            :  par_file.get_parameter<double>("cosalpha0", -0.9999);
+    double cosalphamax = (par_args.key_exists("--cosalphamax")) ? par_args.get_parameter<double>("--cosalphamax")
+                                                                :  par_file.get_parameter<double>("cosalphamax", 0.9999);
     double dcosalpha = par_file.get_parameter<double>("dcosalpha");
     double beta0 = par_file.get_parameter<double>("beta0", -1*M_PI);
     double betamax = par_file.get_parameter<double>("betamax", M_PI);
@@ -50,7 +58,6 @@ int main(int argc, char** argv)
     double r_disc = par_file.get_parameter<double>("r_esc", 500);
     bool logbin_r = par_file.get_parameter<bool>("logbin_r", true);
     double gamma = par_file.get_parameter<double>("gamma", 2);
-    double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
     double dist = par_file.get_parameter<double>("dist");
 
     double efficiency = par_file.get_parameter<double>("efficiency");
@@ -58,13 +65,17 @@ int main(int argc, char** argv)
 
     double major_axis = par_file.get_parameter<double>("major_axis");
     double minor_axis = par_file.get_parameter<double>("minor_axis");
-    double thetalim = par_file.get_parameter<double>("thetalim");
-    double geometry = par_file.get_parameter<double>("geometry");
+    //double thetalim = par_file.get_parameter<double>("thetalim");
+    double r_angle_disc_dis = (par_args.key_exists("--r_angle_disc_dis")) ? par_args.get_parameter<double>("--r_angle_disc_dis")
+                                                                          :  par_file.get_parameter<double>("r_angle_disc_dis", 10);
+    double thetalim = (par_args.key_exists("--thetalim")) ? par_args.get_parameter<double>("--thetalim")
+                                                                        :  par_file.get_parameter<double>("thetalim", 0.0001);
+    //double geometry = par_file.get_parameter<double>("geometry");
 
 
     //double r_disc = par_file.get_parameter<double>("r_disc");
 
-    if (par_args.key_exists("--source_h")) source[1] = par_args.get_parameter<double>("--source_h");
+    //if (par_args.key_exists("--source_h")) source[1] = par_args.get_parameter<double>("--source_h");
 
 	const double r_isco = kerr_isco<double>(spin, +1);
 	if(r_min < 0) r_min = r_isco;
@@ -100,8 +111,8 @@ int main(int argc, char** argv)
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
     //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
-    //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
-    AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
+    DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
+    //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
     //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
     //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(thetalim, thetalim, r_angle_disc_dis);
     //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
