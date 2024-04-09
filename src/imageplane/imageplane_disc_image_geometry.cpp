@@ -474,11 +474,17 @@ int main(int argc, char **argv)
     double spin = (par_args.key_exists("--spin")) ? par_args.get_parameter<double>("--spin")
                                                   : par_file.get_parameter<double>("spin");
 
-    double r_disc = par_file.get_parameter<double>("r_disc");   // radial distance that the disc spans
-    double r_angle_disc_dis = par_file.get_parameter<double>("r_angle_disc_dis");
+    double r_disc = (par_args.key_exists("--r_disc")) ? par_args.get_parameter<double>("--r_disc")
+                                                          :  par_file.get_parameter<double>("r_disc", 200); // radial distance that the disc spans
+
+    double r_angle_disc_dis = (par_args.key_exists("--r_angle_disc_dis")) ? par_args.get_parameter<double>("--r_angle_disc_dis")
+                                                      :  par_file.get_parameter<double>("r_angle_disc_dis", 10);
+
     double r_torus = par_file.get_parameter<double>("r_torus");   // radius of the torus
 
-    double theta_lim = par_file.get_parameter<double>("theta_lim");   // limiting theta value of the part of the warped disc, looking down the y axis at origin
+    double thetalim = (par_args.key_exists("--thetalim")) ? par_args.get_parameter<double>("--thetalim")
+                                                                          :  par_file.get_parameter<double>("thetalim", 0.001); // limiting theta value of the part of the warped disc, looking down the y axis at origin
+
     double major_axis = par_file.get_parameter<double>("major_axis");   // major axis size for ellipse geometry
     double minor_axis = par_file.get_parameter<double>("minor_axis");   // minor axis size for ellipse geometry
 
@@ -558,9 +564,9 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-        //ZDestination<double>* my_destination = new ZDestination<double>(theta_lim, r_disc);
-        DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(theta_lim, r_disc, r_angle_disc_dis);
-        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(0.523598775598, 0.523598775598, r_angle_disc_dis);
+        ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
+        //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(theta_lim, r_disc, r_angle_disc_dis);
+        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
