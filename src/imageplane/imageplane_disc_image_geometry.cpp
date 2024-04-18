@@ -490,7 +490,8 @@ int main(int argc, char **argv)
     double minor_axis = par_file.get_parameter<double>("minor_axis");   // minor axis size for ellipse geometry
 
     double efficiency = par_file.get_parameter<double>("efficiency");
-    double edd = par_file.get_parameter<double>("edd"); // accretion rate
+    double edd = (par_args.key_exists("--edd")) ? par_args.get_parameter<double>("--edd")
+                                                          :  par_file.get_parameter<double>("edd", 0.3); // accretion rate
 
     double x0 = par_file.get_parameter<double>("x0", -1 * r_disc);
     double xmax = par_file.get_parameter<double>("xmax", r_disc);
@@ -567,12 +568,12 @@ int main(int argc, char **argv)
 
         //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
         //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
+        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-        //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
+        ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
 
 
         raytrace_source.redshift_start();
