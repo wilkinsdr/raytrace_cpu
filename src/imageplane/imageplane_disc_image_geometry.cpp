@@ -610,10 +610,10 @@ int main(int argc, char **argv)
                 double xx, yy, zz;
                 cartesian(xx, yy, zz, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta,
                           raytrace_source.rays[ray].phi, spin);
-                if (raytrace_source.rays[ray].r >= r_angle_disc_dis && raytrace_source.rays[ray].r < r_disc &&
-                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
-                //if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
+                //if (raytrace_source.rays[ray].r >= r_angle_disc_dis && raytrace_source.rays[ray].r < r_disc &&
                     //raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
+                if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
+                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
                         xValues[disc_count] = xx;  //  saving the positions of the rays into a file
                         yValues[disc_count] = yy;
                         zValues[disc_count] = zz;
