@@ -476,25 +476,25 @@ class EllipseDiscDestination:
 private:
     T r_disc;
     T r_inner;
-    T major_axis;
-    T minor_axis;
+    T semi_major_axis;
+    T semi_minor_axis;
 public:
-    EllipseDiscDestination(T r_disc_val, T r_inner_val, T major_axis_val, T minor_axis_val) {
+    EllipseDiscDestination(T r_disc_val, T r_inner_val, T semi_major_axis_val, T semi_minor_axis_val) {
         r_disc = r_disc_val;
         r_inner = r_inner_val;
-        major_axis = major_axis_val;
-        minor_axis = minor_axis_val;
+        semi_major_axis = semi_major_axis_val;
+        semi_minor_axis = semi_minor_axis_val;
     }
 
     bool stopping_fn(T r, T theta, T phi, T spin) {
         double x, y, z;
         cartesian(x, y, z, r, theta, phi, spin);
-        T h = (r_inner + major_axis);
+        T h = (r_inner + semi_major_axis);
         T val = sqrt(x*x + y*y);
 
-	if (r >= r_inner && r <= (r_inner + 2*major_axis)) {
-	     return z <= sqrt(minor_axis*minor_axis*(1 - ((val-h)*(val-h))/(major_axis*major_axis)));	
-	} else if (r > r_inner && r > (r_inner + 2*major_axis)) {
+	if (r >= r_inner && r <= (r_inner + 2*semi_major_axis)) {
+	     return z <= sqrt(semi_minor_axis*semi_minor_axis*(1 - ((val-h)*(val-h))/(semi_major_axis*semi_major_axis)));
+	} else if (r > r_inner && r > (r_inner + 2*semi_major_axis)) {
 	     return theta >= M_PI_2;
     }
     }
