@@ -15,7 +15,7 @@ public:
     { }
     virtual void velocity_fn(T& vt, T& vr, T& vtheta, T& vphi, T r, T theta, T phi, T spin, T h, T k)
     { }
-    virtual double step_function(T r, T theta, T phi, T step, T ptheta, T pr, T pphi, T r_disc, T spin)
+    virtual double step_function(T r, T theta, T phi, T step, T ptheta) //, T pr, T pphi, T r_disc, T spin)
     { }
 };
 
@@ -51,9 +51,8 @@ public:
     }
 
     T step_function(T r, T theta, T phi, T step, T ptheta) {
-        if (thetalim > 0 && theta + ptheta * step > thetalim) {
-            return abs((thetalim - theta) / ptheta);
-        }
+        if (theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+        return step;
     }
 };
 
@@ -95,9 +94,11 @@ public:
     }
 
     T step_function(T r, T theta, T phi, T step, T ptheta) {
-        if (thetalim > 0 && theta + ptheta * step > thetalim) {
-            return abs((thetalim - theta) / ptheta);
-        }
+        double B = thetalim + M_PI_2;
+        double C = asin((break_r * sin(B)) / r);
+        double new_thetalim = B + C - M_PI_2;
+        if (theta + ptheta * step > new_thetalim) step = abs((new_thetalim - theta) / ptheta);
+        return step;
     }
 };
 

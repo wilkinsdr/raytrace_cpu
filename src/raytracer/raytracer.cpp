@@ -126,12 +126,12 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* destination, T r_max, T rad_d
 	//
 	cout << "Running raytracer..." << endl;
 
-//	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
-//    show_progress = abs(show_progress);
+	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
 //    #pragma omp parallel for
 	for(int ray=0; ray<nRays; ray++)
 	{
-//        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
+       if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
 
 //        int thread_num = omp_get_thread_num();
 //        cout << "ray number " << ray << " running on thread " << thread_num << endl;
@@ -348,7 +348,8 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* destination, T r_max, T rad_d
 
 
             //if (theta + ptheta * step > M_PI_2) step = abs((M_PI_2 - theta) / ptheta);
-        //step = destination->step_function(r, theta, phi, step, ptheta, pr, pphi, r_disc, spin);
+
+            step = destination->step_function(r, theta, phi, step, ptheta);
             //step = step / 48;
 
             if(step < MIN_STEP) step = MIN_STEP;
