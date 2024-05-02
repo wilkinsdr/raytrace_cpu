@@ -38,9 +38,21 @@
 // minimum number of integration steps before sign of rdot and thetadot are allowed to change
 #define COUNT_MIN 100
 
+#define RAY_STOP_HORIZON 1
+
+#define RAY_STOP_RLIM 2
+
+#define RAY_STOP_DEST 3
+
+#define RAY_STOP_ZLIM 4
+
+#define RAY_STOP_BOUND 5
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include "raytrace_destination.h"
+
 using namespace std;
 
 #include "../include/kerr.h"
@@ -58,6 +70,7 @@ struct Ray
     int status;
     int rdot_sign, thetadot_sign;
     T alpha, beta;
+    T weight;
 };
 
 template <typename T>
@@ -80,18 +93,29 @@ protected:	// these members need to be accessible by derived classes to set up d
 
 public:
     Ray<T> *rays;
+    Ray<T> *rays_0;
+    Ray<T> *rays_1;
+    Ray<T> *rays_2;
+    Ray<T> *rays_3;
+    Ray<T> *rays_4;
+    Ray<T> *rays_5;
+    Ray<T> *rays_6;
+    Ray<T> *rays_7;
+    Ray<T> *raysPerThreadArray;
 
-    Raytracer( int num_rays, T spin, T precision = PRECISION, T init_max_phistep = MAXDPHI, T init_max_tstep = MAXDT );
+    Raytracer( int num_rays, T spin, T precision = PRECISION, T init_max_phistep = MAXDPHI, T init_max_tstep = MAXDT);
     ~Raytracer( );
 
-    void run_raytrace(T r_max = 1000, T theta_max = M_PI / 2, int show_progress = 1, TextOutput* outfile = 0
+    void ray_sort(const int threads);
+
+    void run_raytrace(RayDestination<T>* destination = 1e-2, T r_max = 1000, T rad_disc = -1, int show_progress = 1, int ray_status = 0, T rad_in = -1, T z_min = -1, T bound = -1, TextOutput* outfile = 0
                       , int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
-    inline int propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0
+    inline int propagate(RayDestination<T>* destination, int ray, const T rlim, int ray_status, const T r_disc, const T r_in, const T zlim, const T boundary, const int steplim, TextOutput* outfile = 0
                          , int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
     void redshift_start(T V, bool reverse = false, bool projradius = false);
-    void redshift(T V, bool reverse = false, bool projradius = false, int motion = 0);
-	inline T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion = 0 );
+    void redshift(RayDestination<T>* destination, T V, bool reverse = false, bool projradius = false, int motion = 0);
+	inline T ray_redshift(RayDestination<T>* destination, T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion = 0 );
 
     void range_phi(T min = -1 * M_PI, T max = M_PI);
 

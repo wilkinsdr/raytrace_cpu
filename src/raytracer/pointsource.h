@@ -28,7 +28,7 @@ public:
     -0.995 * M_PI, T betamax = M_PI);
 
 	void redshift_start( );
-	void redshift(T V );
+	void redshift(RayDestination<T>* destination, T V);
 };
 
 #endif /* POINTSOURCE_H_ */

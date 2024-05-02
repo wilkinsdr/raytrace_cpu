@@ -16,5 +16,8 @@ add_subdirectory (ray_paths)
 include_directories("emissivity")
 add_subdirectory (emissivity)
 
+include_directories("emissivity_2d")
+add_subdirectory (emissivity_2d)
+
 include_directories("imageplane")
 add_subdirectory (imageplane)
