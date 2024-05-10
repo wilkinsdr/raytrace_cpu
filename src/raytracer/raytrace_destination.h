@@ -515,7 +515,7 @@ public:
          vphi = (1 / sqrt(e2nu)) * V / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
     }
 
-    T step_function(T r, T theta, T phi, T step, T ptheta, T pr, T pphi, T r_disc, T spin) {
+    T step_function(T r, T theta, T phi, T step, T ptheta) { //, T pr, T pphi, T r_disc, T spin) {
         T thetalim = M_PI_2;
         if (theta + ptheta * step > thetalim) {
             return abs((thetalim - theta) / ptheta);
