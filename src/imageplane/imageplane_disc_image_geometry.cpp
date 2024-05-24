@@ -135,8 +135,8 @@ double powerlaw3(double r, double q1, double rb1, double q2, double rb2, double 
 //                                                precision);
 //    //raytrace_source.set_max_tstep(max_tstep);
 //
-//    //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
-//    AngledDiscsDestination<double>* my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
+//    ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
+//    //AngledDiscsDestination<double>* my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
 //    //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
 //    //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, major_axis, minor_axis);
 //    //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
