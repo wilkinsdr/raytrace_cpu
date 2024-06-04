@@ -74,7 +74,10 @@ public:
         if (r < break_r) {
             return theta >= M_PI_2;
         } else {
-            return theta >= thetalim;
+            double B = thetalim + M_PI_2;
+            double C = asin((break_r * sin(B)) / r);
+            double new_thetalim = B + C - M_PI_2;
+            return theta >= new_thetalim;
         }
     }
 
