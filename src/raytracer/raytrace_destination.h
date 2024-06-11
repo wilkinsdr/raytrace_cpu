@@ -570,10 +570,14 @@ public:
         //double dz = pr* cos(theta) - r*sin(theta)*ptheta;
         //double zlim = 3.3;
         //if (z + dz * step > zlim) step = abs((zlim - z) / dz);
-        double thetalim;
-        thetalim = acos((-3*0.35)*(1-sqrt(r_isco/r)/(2*M_PI*r)));
-        if (theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
-        return step;
+//        double thetalim;
+//        thetalim = acos((-3*0.35)*(1-sqrt(r_isco/r)/(2*M_PI*r)));
+//        if (theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
+//        return step;
+        T thetalim = M_PI_2;
+        if (thetalim > 0 && theta + ptheta * step > thetalim) {
+            return abs((thetalim - theta) / ptheta);
+        }
     }
 };
 
