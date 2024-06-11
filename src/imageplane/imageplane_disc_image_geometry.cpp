@@ -573,12 +573,12 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-        ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
+        //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
         //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
         //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
-        //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
+        EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
         //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
 
