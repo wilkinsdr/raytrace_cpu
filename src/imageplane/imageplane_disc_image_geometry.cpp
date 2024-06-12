@@ -494,7 +494,9 @@ int main(int argc, char **argv)
                                                                           :  par_file.get_parameter<double>("thetalim", 0.001); // limiting theta value of the part of the warped disc, looking down the y axis at origin
 
     double semi_major_axis = par_file.get_parameter<double>("semi_major_axis");   // major axis size for ellipse geometry
-    double semi_minor_axis = par_file.get_parameter<double>("semi_minor_axis");   // minor axis size for ellipse geometry
+    //double semi_minor_axis = par_file.get_parameter<double>("semi_minor_axis");   // minor axis size for ellipse geometry
+    double semi_minor_axis = (par_args.key_exists("--semi_minor_axis")) ? par_args.get_parameter<double>("--semi_minor_axis")
+                                                :  par_file.get_parameter<double>("semi_minor_axis", 2.5);
 
     double efficiency = par_file.get_parameter<double>("efficiency");
     double edd = (par_args.key_exists("--edd")) ? par_args.get_parameter<double>("--edd")
@@ -573,14 +575,14 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-        ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
+        //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
         //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
         //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/4, M_PI/4, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
         //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-        //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
+        ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
 
 
         raytrace_source.redshift_start();
