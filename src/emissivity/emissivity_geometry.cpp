@@ -117,9 +117,9 @@ int main(int argc, char** argv)
     //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
     //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
     //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(thetalim, thetalim, r_angle_disc_dis);
-    //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
+    EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
     //SinDiscDestination<double>* my_destination = new SinDiscDestination<double>(r_disc);
-    ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
+    //ShakuraDiscDestination<double>* my_destination = new ShakuraDiscDestination<double>(efficiency, edd, r_isco);
 
     raytrace_source.redshift_start();
 	raytrace_source.run_raytrace(my_destination, 1.1 * dist, r_disc);
