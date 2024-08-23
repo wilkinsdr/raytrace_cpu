@@ -1,0 +1,18 @@
+# ninja log v5
+6	1964	1712286135472542084	src/emissivity_2d/CMakeFiles/emissivity_2d.dir/emissivity_2d.cpp.o	75c0de24eef131ef
+1056	1170	1718217167369317000	obj/libpointsource.a	bd7c5adb6cb4bb41
+21	7825	1724364614505900256	src/raytracer/CMakeFiles/pointsource.dir/pointsource.cpp.o	97f64cceb24039cb
+6	660	1698202942301277452	src/emissivity/CMakeFiles/emissivity.dir/emissivity.cpp.o	a5de1af499b5b114
+1969	2629	1712286136139154900	bin/emissivity_2d	2a08e13d122647a9
+11	1990	1724364928126117271	src/raytracer/CMakeFiles/imageplane.dir/imageplane.cpp.o	b938d0145914713d
+0	19	0	clean	3c8e6cc385ee00ba
+1	3055	1724373886865585525	build.ninja	b2d20316f57924db
+2640	3260	1718809251575268169	bin/emissivity_geometry	805d89ab66bdd176
+13	1994	1724364928126592787	src/imageplane/CMakeFiles/imageplane_disc_image_geometry.dir/__/raytracer/log_imageplane.cpp.o	52e8c3164486f869
+8	2498	1718809250807843573	src/emissivity/CMakeFiles/emissivity_geometry.dir/emissivity_geometry.cpp.o	77ddb88277e21a7
+19	6934	1724370597065211959	src/imageplane/CMakeFiles/imageplane_disc_image_geometry.dir/imageplane_disc_image_geometry.cpp.o	655f567bbcfb56b0
+6940	7304	1724370597447042805	bin/imageplane_disc_image_geometry	bcc651273316de09
+53	1329	1701814613100072580	src/imageplane/CMakeFiles/imageplane_disc_image.dir/__/raytracer/log_imageplane.cpp.o	ee108aa9e3ed041c
+9420	9713	1724370569462124000	obj/libraytracer.a	29d75bc33c0d39c3
+21	9401	1724370569079624112	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	7837f2e81bc35c09
+1992	2165	1724364928321035000	obj/libimageplane.a	d8a718e91ccbb629
