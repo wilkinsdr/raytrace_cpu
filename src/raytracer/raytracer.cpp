@@ -347,7 +347,7 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* destination, T r_max, T rad_d
             //if(thetalim > 0 && theta + ptheta * step > thetalim) step = abs((thetalim - theta) / ptheta);
 
 
-            //if (theta + ptheta * step > M_PI_2) step = abs((M_PI_2 - theta) / ptheta);
+            if (theta + ptheta * step > M_PI_2) step = abs((M_PI_2 - theta) / ptheta);
 
             step = destination->step_function(r, theta, phi, step, ptheta);
 
@@ -843,14 +843,16 @@ inline T Raytracer<T>::ray_redshift(RayDestination<T>* destination, T V, bool re
 
 	T p[4];
 
+    const T a = (reverse) ? -1*spin : spin;
+
 	// metric coefficients
-	const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
-	const T delta = r*r - 2*r + spin*spin;
-	const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+	const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+	const T delta = r*r - 2*r + a*a;
+	const T sigmasq = (r*r + a*a)*(r*r + a*a) - a*a*delta*sin(theta)*sin(theta);
 
 	const T e2nu = rhosq * delta / sigmasq;
 	const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
-	const T omega = 2*spin*r / sigmasq;
+	const T omega = 2*a*r / sigmasq;
 
 	T g[16];
 	for(int i=0; i<16; i++)
@@ -866,7 +868,7 @@ inline T Raytracer<T>::ray_redshift(RayDestination<T>* destination, T V, bool re
 
 	T et[] = {0, 0, 0, 0};
 
-    destination->velocity_fn(et[0], et[1], et[2], et[3], r, theta, phi, spin, h, k);
+    destination->velocity_fn(et[0], et[1], et[2], et[3], r, theta, phi, a, h, k);
 
 	// photon momentum
     momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);

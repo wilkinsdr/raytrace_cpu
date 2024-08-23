@@ -621,6 +621,7 @@ int main(int argc, char **argv)
                     //raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
                 if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
                     raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
+                //if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
                         xValues[disc_count] = xx;  //  saving the positions of the rays into a file
                         yValues[disc_count] = yy;
                         zValues[disc_count] = zz;
