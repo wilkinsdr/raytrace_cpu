@@ -122,6 +122,7 @@ public:
     bool stopping_fn(T r, T theta, T phi, T spin) {
         double x, y, z;
         cartesian(x, y, z, r, theta, phi, spin);
+        double r_boundary = r_inner / cos(thetalim_1);
         if (0 < phi && phi <= M_PI) {
             if (r < r_inner) {
                 return theta >= M_PI_2;
@@ -129,7 +130,7 @@ public:
                 return y*sin(thetalim_1) + z*cos(thetalim_1) <= 0;
             }
         } else {
-            if (r < r_inner) {
+            if (r < r_boundary) {
                 return theta >= M_PI_2;
             } else {
                 return y*sin(thetalim_2) + z*cos(thetalim_2) <= 0;
@@ -152,6 +153,7 @@ public:
         T pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
 		pt = pt / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
 
+        double r_boundary = r_inner / cos(thetalim_1);
         if (0 < phi && phi <= M_PI) {
             if (r < r_inner) {
                 vt = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
@@ -168,7 +170,7 @@ public:
                 vphi = (vpphi*cos(thetalim_1)*((1/cos(pphi)*1/cos(pphi)))) / ((1/cos(phi)*1/cos(phi)));
             }
         } else {
-            if (r < r_inner) {
+            if (r < r_boundary) {
                 vt = (1 / sqrt(e2nu)) / sqrt(1 - (V - omega) * (V - omega) * e2psi / e2nu);
                 vr = 0;
                 vtheta = 0;
@@ -576,10 +578,4 @@ public:
 //        return step;
         T thetalim = M_PI_2;
         if (thetalim > 0 && theta + ptheta * step > thetalim) {
-            return abs((thetalim - theta) / ptheta);
-        }
-    }
-};
-
-
-#endif //RAYTRACE_CPU_RAYTRACE_DESTINATION_H
+   
