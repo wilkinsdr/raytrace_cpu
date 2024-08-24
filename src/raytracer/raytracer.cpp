@@ -1036,4 +1036,4 @@ void Raytracer<T>::calculate_momentum( )
 }
 
 template class Raytracer<double>;
-template class Raytracer<float>;  
+template class Raytracer<float>;

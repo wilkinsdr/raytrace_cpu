@@ -578,4 +578,10 @@ public:
 //        return step;
         T thetalim = M_PI_2;
         if (thetalim > 0 && theta + ptheta * step > thetalim) {
-   
+            return abs((thetalim - theta) / ptheta);
+        }
+    }
+};
+
+
+#endif //RAYTRACE_CPU_RAYTRACE_DESTINATION_H
