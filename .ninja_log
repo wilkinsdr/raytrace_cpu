@@ -22,3 +22,7 @@
 8570	13845	1725067501095978714	bin/imageplane_disc_image_geometry	f380f5bdcb651693
 13	2328	1725068195494079099	src/imageplane/CMakeFiles/imageplane_disc_image_geometry.dir/imageplane_disc_image_geometry.cpp.o	8b09a2cea0351be0
 2329	3870	1725068197032535861	bin/imageplane_disc_image_geometry	f380f5bdcb651693
+33	32365	1726153209349425443	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	fd3e6104a0100477
+42	33151	1726153210142904197	src/imageplane/CMakeFiles/imageplane_disc_image_geometry.dir/imageplane_disc_image_geometry.cpp.o	8b09a2cea0351be0
+32377	37798	1726153214809416000	obj/libraytracer.a	29d75bc33c0d39c3
+37799	48688	1726153225675553832	bin/imageplane_disc_image_geometry	f380f5bdcb651693
