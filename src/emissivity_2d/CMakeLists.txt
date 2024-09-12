@@ -1,0 +1,2 @@
+add_executable(emissivity_2d emissivity_2d.cpp)
+target_link_libraries(emissivity_2d pointsource raytracer)

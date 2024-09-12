@@ -1,0 +1,5 @@
+add_executable(pointsource_to_disc lamppost/pointsource_to_disc.cpp)
+target_link_libraries(pointsource_to_disc pointsource raytracer)
+
+add_executable(emissivity emissivity/emissivity.cpp)
+target_link_libraries(emissivity pointsource raytracer)
