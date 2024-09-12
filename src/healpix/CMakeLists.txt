@@ -1,5 +1,0 @@
-add_executable(healpix_to_disc healpix/healpix_to_disc.cpp)
-target_link_libraries(healpix_to_disc healpix_pointsource raytracer)
-
-add_executable(healpix_disc_source_photonfrac healpix/healpix_disc_source_photonfrac.cpp)
-target_link_libraries(healpix_disc_source_photonfrac healpix_pointsource raytracer)
