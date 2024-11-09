@@ -57,4 +57,3 @@ This code is free to use for any research project, however please bear in mind t
 - Wilkins and Fabian 2012, MNRAS 424, 1284-1296
 - Wilkins et al. 2016, MNRAS 458, 200
 - Wilkins et al. 2020, MNRAS 493, 5532
-- 
