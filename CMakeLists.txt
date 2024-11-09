@@ -5,9 +5,11 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/obj)
 
+if(EXISTS CMakeLocal.txt)
 include(CMakeLocal.txt)
+endif ()
 
-find_package(GSL REQUIRED)
+find_package(GSL)
 include_directories(${GSL_INCLUDE_DIRS})
 
 # CFITSIO
@@ -19,7 +21,8 @@ include_directories(${CFITSIO_INCLUDE_DIR})
 # HDF5
 # HDF5_ROOT and HDF5_INCLUDE_DIRS need to come from CMakeLocal.txt
 set(HDF5_USE_STATIC_LIBRARIES ON)
-find_package(HDF5 REQUIRED CXX)
+#find_package(HDF5 REQUIRED CXX)
+find_package(HDF5)
 set(hdf5 hdf5)
 set(hdf5_cpp hdf5_cpp)
 set(hdf5_libs hdf5_cpp hdf5)
