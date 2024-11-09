@@ -19,7 +19,7 @@ set(cfitsio_libs ${CFITSIO_LIBRARIES})
 include_directories(${CFITSIO_INCLUDE_DIR})
 
 # HDF5
-# HDF5_ROOT and HDF5_INCLUDE_DIRS need to come from CMakeLocal.txt
+# HDF5_ROOT and HDF5_INCLUDE_DIRS can be specified in CMakeLocal.txt if cmake cannot find them automatically
 set(HDF5_USE_STATIC_LIBRARIES ON)
 #find_package(HDF5 REQUIRED CXX)
 find_package(HDF5)
