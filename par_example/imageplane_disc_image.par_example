@@ -1,0 +1,21 @@
+outfile = ../dat/imageplane_test.fits
+dist = 10000
+incl = 80
+spin = 0.998
+
+r_disc = 30
+
+x0 = -30
+xmax = 30 
+y0 = -30
+ymax = 30
+Nx = 1000
+img_Nx = 1000
+
+q1 = 3
+rb1 = 4
+q2 = 3
+rb2 = 10
+q3 = 3
+
+max_tstep = 1
