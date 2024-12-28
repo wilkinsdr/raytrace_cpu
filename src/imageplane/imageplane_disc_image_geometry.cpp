@@ -575,9 +575,9 @@ int main(int argc, char **argv)
         LogImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, quad, plane_phi0);
         //raytrace_source.set_max_tstep(max_tstep);
 
-        //ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
+        ZDestination<double>* my_destination = new ZDestination<double>(thetalim, r_disc);
         //DelayedFlaredDisc<double>* my_destination = new DelayedFlaredDisc<double>(thetalim, r_disc, r_angle_disc_dis);
-        AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
+        //AngledDiscsDestination<double> *my_destination = new AngledDiscsDestination<double>(thetalim, thetalim, r_angle_disc_dis);
         //TorusDiscDestination<double>* my_destination = new TorusDiscDestination<double>(r_torus, r_disc, r_isco);
         //InclPortionDiscDestination<double>* my_destination = new InclPortionDiscDestination<double>(M_PI/6, M_PI/6, r_angle_disc_dis);
         //EllipseDiscDestination<double>* my_destination = new EllipseDiscDestination<double>(r_disc, r_isco, semi_major_axis, semi_minor_axis);
@@ -617,10 +617,10 @@ int main(int argc, char **argv)
                 double xx, yy, zz;
                 cartesian(xx, yy, zz, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta,
                           raytrace_source.rays[ray].phi, spin);
-                if (raytrace_source.rays[ray].r >= r_angle_disc_dis && raytrace_source.rays[ray].r < r_disc &&
-                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
-                //if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
+                //if (raytrace_source.rays[ray].r >= r_angle_disc_dis && raytrace_source.rays[ray].r < r_disc &&
                     //raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
+                if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc &&
+                    raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
                 //if (raytrace_source.rays[ray].r >= r_isco && raytrace_source.rays[ray].r < r_disc && raytrace_source.rays[ray].status == RAY_STOP_DEST) {
                         xValues[disc_count] = xx;  //  saving the positions of the rays into a file
                         yValues[disc_count] = yy;
