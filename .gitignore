@@ -23,6 +23,7 @@ CMakeFiles
 
 # we don't want CMakeLocal cloned between machines
 CMakeLocal.txt
+cmake.local
 
 # IDE stuff
 .idea
