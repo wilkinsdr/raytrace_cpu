@@ -305,19 +305,23 @@ inline void momentum_from_consts(T& pt, T& pr, T& ptheta, T& pphi,
 	//
 	// Calculate photon momentum from constants of motion at a location
 	//
-	const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+	const T sin_theta = sin(theta);
+	const T cos_theta = cos(theta);
+	const T sin2theta = sin_theta * sin_theta;
+	const T rhosq = r*r + (a*cos_theta)*(a*cos_theta);
 	const T delta = r*r - 2*r + a*a;
+	const T rhosq_delta = rhosq * delta;
 
 	// tdot
-	pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
-	pt = pt / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
+	pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin2theta)*k - 2*a*r*h;
+	pt /= rhosq_delta;
 
 	// phidot
-	pphi = 2*a*r*sin(theta)*sin(theta)*k + (r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*h;
-	pphi = pphi / ( (r*r + a*a)*(r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
+	pphi = 2*a*r*sin2theta*k + (rhosq - 2*r)*h;
+	pphi /= sin2theta * rhosq_delta;
 
 	// thetadot
-	T thetadotsq = Q + (k*a*cos(theta) + h/tan(theta))*(k*a*cos(theta) - h/tan(theta));
+	T thetadotsq = Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta);
 	thetadotsq = thetadotsq / (rhosq*rhosq);
 
 	// take the square roots and get the right signs
