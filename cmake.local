@@ -1,0 +1,1 @@
+set(CFITSIO_PATH /opt/software/cfitsio/4.6.3)
