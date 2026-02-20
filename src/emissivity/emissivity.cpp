@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
 	raytrace_source.redshift_start();
-	raytrace_source.run_raytrace(r_max, M_PI_2, show_progress);
+	raytrace_source.run_raytrace_rk4(r_max, M_PI_2, show_progress);
 	raytrace_source.range_phi();
 	raytrace_source.redshift(-1);
 

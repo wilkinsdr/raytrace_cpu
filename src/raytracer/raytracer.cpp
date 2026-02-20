@@ -79,18 +79,32 @@ void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOut
 
 	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
     show_progress = abs(show_progress);
-	for(int ray=0; ray<nRays; ray++)
-	{
-        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
-	    if(rays[ray].steps < 0) continue;
-		else if(rays[ray].steps >= STEPLIM) continue;
 
-		int n;
-		n = propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-		//rays[ray].steps += n;
+	if (outfile != nullptr) {
+		// Serial path: ordered file writes required
+		for (int ray = 0; ray < nRays; ray++)
+		{
+			if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+			if (rays[ray].steps < 0) continue;
+			else if (rays[ray].steps >= STEPLIM) continue;
 
-		if(outfile != 0)
+			propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
 			outfile->newline(2);
+		}
+	} else {
+		// Parallel path: rays are fully independent, no file I/O
+		#pragma omp parallel for schedule(dynamic)
+		for (int ray = 0; ray < nRays; ray++)
+		{
+			if (show_progress != 0 && (ray % show_progress) == 0) {
+				#pragma omp critical
+				prog.show(ray + 1);
+			}
+			if (rays[ray].steps < 0) continue;
+			else if (rays[ray].steps >= STEPLIM) continue;
+
+			propagate(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+		}
 	}
     prog.done();
 }
@@ -619,17 +633,32 @@ void Raytracer<T>::run_raytrace_rk4(T r_max, T theta_max, int show_progress, Tex
 
 	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
     show_progress = abs(show_progress);
-	for(int ray=0; ray<nRays; ray++)
-	{
-        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
-	    if(rays[ray].steps < 0) continue;
-		else if(rays[ray].steps >= STEPLIM) continue;
 
-		int n;
-		n = propagate_rk4(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+	if (outfile != nullptr) {
+		// Serial path: ordered file writes required
+		for (int ray = 0; ray < nRays; ray++)
+		{
+			if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+			if (rays[ray].steps < 0) continue;
+			else if (rays[ray].steps >= STEPLIM) continue;
 
-		if(outfile != 0)
+			propagate_rk4(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
 			outfile->newline(2);
+		}
+	} else {
+		// Parallel path: rays are fully independent, no file I/O
+		#pragma omp parallel for schedule(dynamic)
+		for (int ray = 0; ray < nRays; ray++)
+		{
+			if (show_progress != 0 && (ray % show_progress) == 0) {
+				#pragma omp critical
+				prog.show(ray + 1);
+			}
+			if (rays[ray].steps < 0) continue;
+			else if (rays[ray].steps >= STEPLIM) continue;
+
+			propagate_rk4(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+		}
 	}
     prog.done();
 }
