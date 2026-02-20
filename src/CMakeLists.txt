@@ -18,3 +18,5 @@ add_subdirectory (emissivity)
 
 include_directories("imageplane")
 add_subdirectory (imageplane)
+
+add_subdirectory (tests)

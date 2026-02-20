@@ -274,7 +274,7 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
     rays[ray].ptheta = ptheta;
     rays[ray].pphi = pphi;
     rays[ray].rdot_sign = rdot_sign;
-    rays[ray].rdot_sign = thetadot_sign;
+    rays[ray].thetadot_sign = thetadot_sign;
 
 	if(steps > 0) rays[ray].steps += steps;
 
@@ -606,6 +606,218 @@ void Raytracer<T>::calculate_momentum( )
 
 		rays[ray].pr = sqrt(abs(rdotsq)) * rdot_sign;
 	}
+}
+
+template <typename T>
+void Raytracer<T>::run_raytrace_rk4(T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+{
+	//
+	// Runs the ray tracing algorithm using the RK4 integrator.
+	// Same interface as run_raytrace(), but calls propagate_rk4() instead of propagate().
+	//
+	cout << "Running raytracer (RK4)..." << endl;
+
+	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
+	for(int ray=0; ray<nRays; ray++)
+	{
+        if(show_progress != 0 && (ray % show_progress) == 0) prog.show(ray+1);
+	    if(rays[ray].steps < 0) continue;
+		else if(rays[ray].steps >= STEPLIM) continue;
+
+		int n;
+		n = propagate_rk4(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+
+		if(outfile != 0)
+			outfile->newline(2);
+	}
+    prog.done();
+}
+
+template <typename T>
+inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+{
+	//
+	// Propagate the photon along its geodesic using a classical 4th-order Runge-Kutta (RK4) integrator.
+	//
+	// At each step the photon momenta are evaluated at four trial positions (k1-k4) using the
+	// conserved constants of motion (k, h, Q), then combined with the standard RK4 weights.
+	// Sign tracking, step-size control, and termination conditions are identical to propagate().
+	//
+	int steps = 0;
+
+	int rsign_count = COUNT_MIN;
+	int thetasign_count = COUNT_MIN;
+
+	T rhosq, delta;
+	T rdotsq, thetadotsq;
+
+	T step;
+
+	T x, y, z;
+
+	// copy variables locally
+	T a = spin;
+	T t = rays[ray].t;
+	T r = rays[ray].r;
+	T theta = rays[ray].theta;
+	T phi = rays[ray].phi;
+	T pt = rays[ray].pt;
+	T pr = rays[ray].pr;
+	T ptheta = rays[ray].ptheta;
+	T pphi = rays[ray].pphi;
+	int rdot_sign = rays[ray].rdot_sign;
+	int thetadot_sign = rays[ray].thetadot_sign;
+
+	const T k = rays[ray].k;
+	const T h = rays[ray].h;
+	const T Q = rays[ray].Q;
+
+	bool write_started = false;
+
+	bool rdotsign_unlocked = false;
+	bool thetadotsign_unlocked = false;
+
+	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
+	{
+		++steps;
+
+		// === k1: evaluate momenta at current position (with sign-flip detection) ===
+
+		rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+		delta = r*r - 2*r + a*a;
+
+		// tdot (k1)
+		pt = (rhosq*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta))*k - 2*a*r*h;
+		pt = pt / ( r*r * (1 + (a*cos(theta)/r)*(a*cos(theta)/r) - 2/r)*(r*r + a*a) + 2*a*a*r*sin(theta)*sin(theta) );
+
+		// phidot (k1)
+		pphi = 2*a*r*sin(theta)*sin(theta)*k + (r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*h;
+		pphi = pphi / ( (r*r + a*a)*(r*r + (a*cos(theta))*(a*cos(theta)) - 2*r)*sin(theta)*sin(theta) + 2*a*a*r*sin(theta)*sin(theta)*sin(theta)*sin(theta) );
+
+		// thetadot (k1) with sign-flip detection
+		thetadotsq = Q + (k*a*cos(theta) + h/tan(theta))*(k*a*cos(theta) - h/tan(theta));
+		thetadotsq = thetadotsq / (rhosq*rhosq);
+
+		if(thetadotsq < 0 && thetasign_count >= COUNT_MIN)
+		{
+			thetadot_sign *= -1;
+			thetasign_count = 0;
+			continue;
+		}
+		if (thetasign_count <= COUNT_MIN) thetasign_count++;
+
+		ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
+
+		// rdot (k1) with sign-flip detection
+		rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
+		rdotsq = rdotsq * delta/rhosq;
+
+		if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+		{
+			rdot_sign *= -1;
+			rsign_count = 0;
+		}
+		else
+		{
+			rsign_count++;
+			rdotsign_unlocked = true;
+		}
+
+		pr = sqrt(abs(rdotsq)) * rdot_sign;
+
+		// store k1 momenta
+		const T pt1 = pt, pr1 = pr, ptheta1 = ptheta, pphi1 = pphi;
+
+		// === Step size (based on k1 momenta, identical to propagate()) ===
+        step = abs((r - (T) horizon) / pr1) / precision;
+        if(step > abs(theta / ptheta1) / precision)
+        {
+            step = abs(theta / ptheta1) / theta_precision;
+        }
+        if(max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt1))
+        {
+            step = abs(max_tstep / pt1);
+        }
+        if(max_phistep > 0 && step > abs(max_phistep / pphi1))
+        {
+            step = abs(max_phistep / pphi1);
+        }
+        if(step < MIN_STEP) step = MIN_STEP;
+
+        if(rlim > 0 && r + pr1 * step > rlim) step = abs((rlim - r) / pr1);
+        if(thetalim > 0 && theta + ptheta1 * step > thetalim) step = abs((thetalim - theta) / ptheta1);
+
+		// ergosphere check (based on k1 tdot)
+		if(pt1 <= 0)
+		{
+			rays[ray].status = -2;
+            rays[ray].steps = -1;
+			break;
+		}
+
+		// === k2: evaluate momenta at (r + step/2*pr1, theta + step/2*ptheta1) ===
+		T pt2, pr2, ptheta2, pphi2;
+		momentum_from_consts<T>(pt2, pr2, ptheta2, pphi2, k, h, Q,
+		                        rdot_sign, thetadot_sign,
+		                        r + (step/2)*pr1, theta + (step/2)*ptheta1, phi, a);
+
+		// === k3: evaluate momenta at (r + step/2*pr2, theta + step/2*ptheta2) ===
+		T pt3, pr3, ptheta3, pphi3;
+		momentum_from_consts<T>(pt3, pr3, ptheta3, pphi3, k, h, Q,
+		                        rdot_sign, thetadot_sign,
+		                        r + (step/2)*pr2, theta + (step/2)*ptheta2, phi, a);
+
+		// === k4: evaluate momenta at (r + step*pr3, theta + step*ptheta3) ===
+		T pt4, pr4, ptheta4, pphi4;
+		momentum_from_consts<T>(pt4, pr4, ptheta4, pphi4, k, h, Q,
+		                        rdot_sign, thetadot_sign,
+		                        r + step*pr3, theta + step*ptheta3, phi, a);
+
+		// === RK4 weighted position update ===
+		t     += (step / 6) * (pt1     + 2*pt2     + 2*pt3     + pt4);
+		r     += (step / 6) * (pr1     + 2*pr2     + 2*pr3     + pr4);
+		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
+		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
+
+		if(r <= horizon) break;
+
+		if(outfile != 0 && (steps % write_step) == 0 )
+		{
+			if((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin) )
+			{
+				write_started = true;
+				if(write_cartesian)
+				{
+                    cartesian<T>(x, y, z, r, theta, phi, a);
+					(*outfile) << t << x << y << z << endl;
+				}
+				else
+				{
+					(*outfile) << t << r << theta << phi << endl;
+				}
+			}
+			else if(write_started)
+			{
+				break;
+			}
+		}
+	}
+
+	rays[ray].t = t;
+    rays[ray].r = r;
+    rays[ray].theta = theta;
+    rays[ray].phi = phi;
+    rays[ray].pt = pt;
+    rays[ray].pr = pr;
+    rays[ray].ptheta = ptheta;
+    rays[ray].pphi = pphi;
+    rays[ray].rdot_sign = rdot_sign;
+    rays[ray].thetadot_sign = thetadot_sign;
+
+	if(steps > 0) rays[ray].steps += steps;
+
+	return steps;
 }
 
 template class Raytracer<double>;

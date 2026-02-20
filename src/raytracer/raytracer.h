@@ -89,6 +89,11 @@ public:
     inline int propagate(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0
                          , int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
 
+    void run_raytrace_rk4(T r_max = 1000, T theta_max = M_PI / 2, int show_progress = 1, TextOutput* outfile = 0
+                          , int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
+    inline int propagate_rk4(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile = 0
+                              , int write_step = 1, T write_rmax = -1, T write_rmin = -1, bool write_cartesian = true);
+
     void redshift_start(T V, bool reverse = false, bool projradius = false);
     void redshift(T V, bool reverse = false, bool projradius = false, int motion = 0);
 	inline T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion = 0 );
