@@ -103,7 +103,9 @@ public:
 
     void redshift_start(T V, bool reverse = false, bool projradius = false);
     void redshift(T V, bool reverse = false, bool projradius = false, int motion = 0);
+    void redshift(RayDestination<T>* dest, bool reverse = false, bool projradius = false, int motion = 0);
 	inline T ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion = 0 );
+    inline T ray_redshift( const T et[4], bool reverse, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit );
 
     void range_phi(T min = -1 * M_PI, T max = M_PI);
 

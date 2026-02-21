@@ -31,6 +31,7 @@ public:
 
 	void redshift_start( );
 	void redshift(bool projradius);
+	using Raytracer<T>::redshift;
 
     inline int get_x_index(int ix)
     {

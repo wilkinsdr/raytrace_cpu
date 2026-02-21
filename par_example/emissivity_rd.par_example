@@ -1,0 +1,19 @@
+outfile = ../dat/emissivity_rd_test.dat
+
+# Polar angle at which rays are stopped (radians). Default pi/2 = flat equatorial disc.
+# Set to a different value to trace to a tilted or non-equatorial surface.
+theta_lim = 1.5707963
+
+source = 0 5 1E-3 1.5707
+V = 0
+
+spin = 0.998
+
+dcosalpha = 0.005
+dbeta = 0.001
+
+Nr = 100
+logbin_r = 1
+
+show_progress = 1
+

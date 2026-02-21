@@ -29,6 +29,7 @@ public:
 
 	void redshift_start(bool reverse = false);
 	void redshift(T V, bool reverse = false);
+	using Raytracer<T>::redshift;
 
 	int get_num_pix()
     {

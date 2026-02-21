@@ -409,6 +409,36 @@ void Raytracer<T>::redshift(T V, bool reverse, bool projradius, int motion )
 
 
 template <typename T>
+void Raytracer<T>::redshift(RayDestination<T>* dest, bool reverse, bool projradius, int motion)
+{
+	//
+	// Calculates the redshift of each ray using a full 4-velocity field supplied by the
+	// RayDestination object. For each ray, dest->four_velocity(r, theta, phi, spin, et) is
+	// called to obtain the observer 4-velocity et[4] at the ray's termination point. The
+	// GR dot product g_μν et^μ p^ν is then evaluated to compute the received energy.
+	//
+	// Arguments:
+	//   dest        RayDestination<T>*  Destination object supplying the 4-velocity field
+	//   reverse     bool                Whether the ray is being propagated backwards in time
+	//   projradius  bool                Unused (kept for API compatibility)
+	//   motion      int                 Unused (kept for API compatibility; 4-vector subsumes both modes)
+	//
+	cout << "Calculating ray redshifts..." << endl;
+
+	for(int ray=0; ray<nRays; ray++)
+	{
+		T et[4];
+		dest->four_velocity(rays[ray].r, rays[ray].theta, rays[ray].phi, spin, et);
+		rays[ray].redshift = ray_redshift(et, reverse,
+		                                  rays[ray].r, rays[ray].theta, rays[ray].phi,
+		                                  rays[ray].k, rays[ray].h, rays[ray].Q,
+		                                  rays[ray].rdot_sign, rays[ray].thetadot_sign,
+		                                  rays[ray].emit);
+	}
+}
+
+
+template <typename T>
 inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit, int motion )
 {
 	// calculate the redshift of a single ray
@@ -461,6 +491,53 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 		et[0] = 1. / sqrt(g[0*4+0] + g[1*4+1]*V*V);
 		et[1] = V * et[0];
 	}
+
+	// photon momentum
+    momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);
+
+	// if we're propagating backwards, reverse the direction of the photon momentum
+	if(reverse)
+	{
+	    p[1] *= -1; p[2] *= -1; p[3] *= -1;
+	}
+
+	// evaluate dot product to get energy
+	T recv = 0;
+	for(int i=0; i<4; i++)
+		for(int j=0; j<4; j++)
+			recv += g[i*4 + j] * et[i] * p[j];
+
+	return (reverse) ? recv / emit : emit / recv;
+}
+
+
+template <typename T>
+inline T Raytracer<T>::ray_redshift( const T et[4], bool reverse, T r, T theta, T phi, T k, T h, T Q, int rdot_sign, int thetadot_sign, T emit )
+{
+	// calculate the redshift of a single ray given the observer 4-velocity et[4]
+
+	T p[4];
+
+	// metric coefficients
+	const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
+	const T delta = r*r - 2*r + spin*spin;
+	const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+
+	const T e2nu = rhosq * delta / sigmasq;
+	const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
+	const T omega = 2*spin*r / sigmasq;
+
+	T g[16];
+	for(int i=0; i<16; i++)
+		g[i] = 0;
+
+	// g[i][j] -> g[i*4 + j]
+	g[0*4 + 0] = e2nu - omega*omega*e2psi;
+	g[0*4 + 3] = omega*e2psi;
+	g[3*4 + 0] = g[0*4 + 3];
+	g[1*4 + 1] = -rhosq/delta;
+	g[2*4 + 2] = -rhosq;
+	g[3*4 + 3] = -e2psi;
 
 	// photon momentum
     momentum_from_consts<T>(p[0], p[1], p[2], p[3], k, h, Q, rdot_sign, thetadot_sign, r, theta, phi, spin);

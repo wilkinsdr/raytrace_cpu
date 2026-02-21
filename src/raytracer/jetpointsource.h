@@ -34,6 +34,7 @@ public:
 
 	void redshift_start( );
 	void redshift(T V);
+	using Raytracer<T>::redshift;
 
 };
 

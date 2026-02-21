@@ -5,8 +5,8 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/obj)
 
-if(EXISTS cmake.local)
-include(cmake.local)
+if(EXISTS ${CMAKE_SOURCE_DIR}/cmake.local)
+include(${CMAKE_SOURCE_DIR}/cmake.local)
 endif ()
 
 find_package(GSL)

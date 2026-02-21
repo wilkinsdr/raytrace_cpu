@@ -1,3 +1,6 @@
 add_executable(imageplane_disc_image imageplane_disc_image.cpp)
 target_link_libraries(imageplane_disc_image imageplane raytracer ${cfitsio_libs})
 
+add_executable(imageplane_disc_image_rd imageplane_disc_image_rd.cpp)
+target_link_libraries(imageplane_disc_image_rd imageplane raytracer ${cfitsio_libs})
+
