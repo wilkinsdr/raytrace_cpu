@@ -10,8 +10,8 @@ src/tests/*
 util/*
 !tests/*.*
 !util/*.*
-!src/tests/**/
-!util/**/
+!src/tests/*.*
+!util/*.*
 
 # ignore cmake working files
 *.cmake
