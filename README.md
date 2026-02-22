@@ -1,4 +1,4 @@
-# raytrace_cpu
+# KerrRay
 A CPU port of the CUDAKerr ray tracing code (Wilkins et al. 2012, 2016). While CUDAKerr was written to run on NVIDIA GPUs, this version provides the same functionality running on the CPU, and can be compiled to run on a range of platforms.
 
 CUDAKerr and raytrace_cpu predict light paths in the curved spacetime around black holes by calculating the null geodesics in the Kerr spacetime. While CUDAKerr is a general ray tracing code, it specialises in creating models of X-ray reflection and reverberation from the accretion discs around black holes.
