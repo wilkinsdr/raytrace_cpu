@@ -244,12 +244,16 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
         // the code below is if we wanted to run rays backwards (not implemented)
         //if(reverse) step *= -1;
 
-		// throw away the ray if tdot goes negative (inside the ergosphere - these are not physical)
+		// flag the ray if tdot goes negative (inside the ergosphere - these are not physical)
 		if(pt <= 0)
 		{
-			rays[ray].status = -2;
-            rays[ray].steps = -1;
-			break;
+			rays[ray].status |= RAY_STATUS_ERGO;
+		}
+
+		// check that the dot product of the photon 4-momentum with the local timelike Killing vector is positive
+		if((1 - 2*r/rhosq) * pt + (2*a*r*sin2theta/rhosq) * pphi < 0)
+		{
+			rays[ray].status |= RAY_STATUS_NEG_ENERGY;
 		}
 
 		// calculate new position
@@ -260,7 +264,11 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 
 		//aff += step;
 
-		if(r <= horizon) break;
+		if(r <= horizon)
+		{
+			rays[ray].status |= RAY_STATUS_HORIZON;
+			break;
+		}
 
 		if(outfile != 0 && (steps % write_step) == 0 )
 		{
@@ -283,6 +291,13 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 			}
 		}
 	}
+
+	if (steps >= steplim)
+		rays[ray].status |= RAY_STATUS_STEPLIM;
+	else if (r >= rlim)
+		rays[ray].status |= RAY_STATUS_RLIM;
+	else if ((thetalim > 0 && theta >= thetalim) || (thetalim < 0 && theta <= abs(thetalim)))
+		rays[ray].status |= RAY_STATUS_DEST;
 
 	rays[ray].t = t;
     rays[ray].r = r;
@@ -792,9 +807,17 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		// ergosphere check (based on k1 tdot)
 		if(pt1 <= 0)
 		{
-			rays[ray].status = -2;
-            rays[ray].steps = -1;
-			break;
+			rays[ray].status |= RAY_STATUS_ERGO;
+            //rays[ray].steps = -1;
+			//break;
+		}
+
+		// check that the dot product of the photon 4-momentum with the local timelike Killing vector is positive
+		if((1 - 2*r/rhosq) * pt1 + (2*a*r*sin2theta/rhosq) * pphi1 < 0)
+		{
+			rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+			//rays[ray].steps = -1;
+			//break;
 		}
 
 		// === k2: evaluate momenta at (r + step/2*pr1, theta + step/2*ptheta1) ===
@@ -821,7 +844,11 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
 
-		if(r <= horizon) break;
+		if(r <= horizon)
+		{
+			rays[ray].status |= RAY_STATUS_HORIZON;
+			break;
+		}
 
 		if(outfile != 0 && (steps % write_step) == 0 )
 		{
@@ -844,6 +871,13 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 			}
 		}
 	}
+
+	if (steps >= steplim)
+		rays[ray].status |= RAY_STATUS_STEPLIM;
+	else if (r >= rlim)
+		rays[ray].status |= RAY_STATUS_RLIM;
+	else if ((thetalim > 0 && theta >= thetalim) || (thetalim < 0 && theta <= abs(thetalim)))
+		rays[ray].status |= RAY_STATUS_DEST;
 
 	rays[ray].t = t;
     rays[ray].r = r;
@@ -1022,9 +1056,17 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		// ergosphere check (based on k1 tdot)
 		if(pt1 <= 0)
 		{
-			rays[ray].status = -2;
-            rays[ray].steps = -1;
-			break;
+			rays[ray].status |= RAY_STATUS_ERGO;
+            // rays[ray].steps = -1;
+			// break;
+		}
+
+		// check that the dot product of the photon 4-momentum with the local timelike Killing vector is positive
+		if((1 - 2*r/rhosq) * pt1 + (2*a*r*sin2theta/rhosq) * pphi1 < 0)
+		{
+			rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+			// rays[ray].steps = -1;
+			// break;
 		}
 
 		// === k2: evaluate momenta at (r + step/2*pr1, theta + step/2*ptheta1) ===
@@ -1051,8 +1093,16 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
 
-		if(r <= horizon) break;
-		if(dest->reached(r, theta, phi)) break;
+		if(r <= horizon)
+		{
+			rays[ray].status |= RAY_STATUS_HORIZON;
+			break;
+		}
+		if(dest->reached(r, theta, phi))
+		{
+			rays[ray].status |= RAY_STATUS_DEST;
+			break;
+		}
 
 		if(outfile != 0 && (steps % write_step) == 0 )
 		{
@@ -1075,6 +1125,11 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 			}
 		}
 	}
+
+	if (steps >= steplim)
+			rays[ray].status |= RAY_STATUS_STEPLIM;
+	else if (r >= rlim)
+			rays[ray].status |= RAY_STATUS_RLIM;
 
 	rays[ray].t = t;
     rays[ray].r = r;

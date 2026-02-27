@@ -94,8 +94,9 @@ int main(int argc, char** argv)
 
 	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
 	{
+		//if (raytrace_source.rays[ray].steps > 0 && !(raytrace_source.rays[ray].status & RAY_STATUS_NEG_ENERGY))
 		if (raytrace_source.rays[ray].steps > 0)
-		{
+        {
 		    double x, y, z;
 		    cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
             if(z < 1E-2 && raytrace_source.rays[ray].redshift > 0 && raytrace_source.rays[ray].r >= r_isco)

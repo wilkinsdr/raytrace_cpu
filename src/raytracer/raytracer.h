@@ -47,6 +47,14 @@ using namespace std;
 #include "../include/text_output.h"
 #include "../include/progress_bar.h"
 
+// Ray propagation status bit flags (can be combined with bitwise OR)
+constexpr int RAY_STATUS_DEST       = (1 << 0);  // ray reached destination (user-defined, or polar angle limit in thetalim overloads)
+constexpr int RAY_STATUS_HORIZON    = (1 << 1);  // ray fell through event horizon
+constexpr int RAY_STATUS_RLIM       = (1 << 2);  // ray reached outer radial limit
+constexpr int RAY_STATUS_STEPLIM    = (1 << 3);  // ray exceeded maximum step count
+constexpr int RAY_STATUS_ERGO       = (1 << 4);  // ray entered ergosphere (non-physical, pt <= 0)
+constexpr int RAY_STATUS_NEG_ENERGY = (1 << 5);  // dot product of 4-momentum with timelike Killing vector is negative (non-physical)
+
 template <typename T>
 struct Ray
 {
