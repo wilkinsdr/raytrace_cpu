@@ -1344,11 +1344,11 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
             // A clamped step is accepted normally but does not update the running step size.
             T h_try  = step;
             bool clamped = false;
-            if (rlim > 0 && r + pr1 * h_try > rlim)
-            {
-                h_try  = abs((rlim - r) / pr1);
-                clamped = true;
-            }
+            // if (rlim > 0 && r + pr1 * h_try > rlim)
+            // {
+            //     h_try  = abs((rlim - r) / pr1);
+            //     clamped = true;
+            // }
             if (thetalim > 0 && theta + ptheta1 * h_try > thetalim)
             {
                 T h_th = abs((thetalim - theta) / ptheta1);

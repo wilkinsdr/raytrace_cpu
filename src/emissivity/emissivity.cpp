@@ -88,14 +88,15 @@ int main(int argc, char** argv)
 	PointSource<double> raytrace_source(source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax);
 
 	raytrace_source.redshift_start();
-	raytrace_source.run_raytrace_rk4(r_max, M_PI_2, show_progress);
+	raytrace_source.run_raytrace_rk45(r_max, M_PI_2, show_progress);
+    //raytrace_source.run_raytrace(r_max, M_PI_2, show_progress);
 	raytrace_source.range_phi();
 	raytrace_source.redshift(-1);
 
 	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
 	{
-		//if (raytrace_source.rays[ray].steps > 0 && !(raytrace_source.rays[ray].status & RAY_STATUS_NEG_ENERGY))
-		if (raytrace_source.rays[ray].steps > 0)
+		if (raytrace_source.rays[ray].steps > 0 && !(raytrace_source.rays[ray].status & RAY_STATUS_NEG_ENERGY))
+		//if (raytrace_source.rays[ray].steps > 0)
         {
 		    double x, y, z;
 		    cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
