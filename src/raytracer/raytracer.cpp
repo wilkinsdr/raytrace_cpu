@@ -1147,5 +1147,645 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 	return steps;
 }
 
+// =============================================================================
+// RK45 / Dormand-Prince (DOPRI5) adaptive integrator
+// =============================================================================
+
+template <typename T>
+void Raytracer<T>::run_raytrace_rk45(T r_max, T theta_max, int show_progress, TextOutput* outfile,
+                                      int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+{
+    cout << "Running raytracer (RK45/DOPRI5)..." << endl;
+
+    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
+
+    if (outfile != nullptr) {
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= STEPLIM) continue;
+
+            propagate_rk45(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+            outfile->newline(2);
+        }
+    } else {
+        #pragma omp parallel for schedule(dynamic)
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) {
+                #pragma omp critical
+                prog.show(ray + 1);
+            }
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= STEPLIM) continue;
+
+            propagate_rk45(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+        }
+    }
+    prog.done();
+}
+
+template <typename T>
+inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim, const int steplim,
+                                         TextOutput* outfile, int write_step,
+                                         T write_rmax, T write_rmin, bool write_cartesian)
+{
+    //
+    // Propagate the photon along its geodesic using the adaptive Dormand-Prince RK45 integrator.
+    //
+    // Algorithm: DOPRI5 (Dormand & Prince, 1980, J. Comput. Appl. Math. 6, 19-26).
+    // An embedded 4th/5th-order Runge-Kutta pair shares a single 7-stage evaluation.
+    // The 5th-order solution is propagated (local extrapolation) and its difference from
+    // the embedded 4th-order estimate gives a per-step local error.  The step size is
+    // adjusted each step to keep this normalised error below 1e-8 (mixed abs/rel norm
+    // over r and theta).
+    //
+    // Step-size controller (Hairer & Wanner, "Solving ODEs I", §II.4):
+    //   step_new = step * min(5, max(0.1, 0.9 * (1/err)^(1/5)))
+    //
+    // The FSAL (First Same As Last) optimisation — reusing k7 as k1 of the next step —
+    // is not implemented here; k1 is recomputed from the constants of motion at the start
+    // of each step.  This costs one extra derivative evaluation per step but keeps the
+    // sign-flip logic simple and consistent with propagate() and propagate_rk4().
+    //
+
+    int steps = 0;
+
+    int rsign_count      = COUNT_MIN;
+    int thetasign_count  = COUNT_MIN;
+    bool rdotsign_unlocked    = false;
+    bool thetadotsign_unlocked = false;   // declared for symmetry; sign-flip uses thetasign_count
+
+    T x, y, z;
+
+    T a      = spin;
+    T t      = rays[ray].t;
+    T r      = rays[ray].r;
+    T theta  = rays[ray].theta;
+    T phi    = rays[ray].phi;
+    T pt     = rays[ray].pt;
+    T pr     = rays[ray].pr;
+    T ptheta = rays[ray].ptheta;
+    T pphi   = rays[ray].pphi;
+    int rdot_sign     = rays[ray].rdot_sign;
+    int thetadot_sign = rays[ray].thetadot_sign;
+
+    const T k = rays[ray].k;
+    const T h = rays[ray].h;   // z-angular momentum constant of motion
+    const T Q = rays[ray].Q;
+
+    bool write_started = false;
+
+    // -------------------------------------------------------------------------
+    // DOPRI5 Butcher tableau (Dormand & Prince 1980, Table 2, p.21)
+    // Nodes: c = {0, 1/5, 3/10, 4/5, 8/9, 1, 1}
+    // -------------------------------------------------------------------------
+    static constexpr T a21 = T(1)/5;
+    static constexpr T a31 = T(3)/40,         a32 = T(9)/40;
+    static constexpr T a41 = T(44)/45,         a42 = T(-56)/15,        a43 = T(32)/9;
+    static constexpr T a51 = T(19372)/6561,    a52 = T(-25360)/2187,   a53 = T(64448)/6561,  a54 = T(-212)/729;
+    static constexpr T a61 = T(9017)/3168,     a62 = T(-355)/33,       a63 = T(46732)/5247,
+                        a64 = T(49)/176,        a65 = T(-5103)/18656;
+
+    // 5th-order propagation weights (b2 = 0, so k2 does not enter the solution):
+    static constexpr T b1 = T(35)/384,    b3 = T(500)/1113,   b4 = T(125)/192,
+                        b5 = T(-2187)/6784, b6 = T(11)/84;
+
+    // Error coefficients e_i = b_i - b*_i (difference from embedded 4th-order weights).
+    // These use the k7 FSAL stage evaluated at the 5th-order estimate:
+    static constexpr T e1 = T(71)/57600,      e3 = T(-71)/16695,     e4 = T(71)/1920,
+                        e5 = T(-17253)/339200, e6 = T(22)/525,        e7 = T(-1)/40;
+    // -------------------------------------------------------------------------
+
+    // Adaptive step-size control parameters (Hairer & Wanner §II.4)
+    static constexpr T safety  = T(0.9);    // conservative scale on predicted step
+    static constexpr T fac_max = T(5.0);    // cap on per-step growth
+    static constexpr T fac_min = T(0.1);    // floor on per-step shrink
+    static constexpr T tol     = T(1e-8);   // mixed absolute/relative error tolerance on (r, theta)
+
+    // Seed the running step size with the same heuristic as propagate()/propagate_rk4().
+    // The adaptive controller will adjust this from the very first step.
+    {
+        const T sth = sin(theta), cth = cos(theta), s2th = sth * sth;
+        const T rho2 = r*r + (a*cth)*(a*cth);
+        const T dlt  = r*r - 2*r + a*a;
+        pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
+        pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+        T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
+        ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+        T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+        pr = sqrt(abs(rdotsq)) * rdot_sign;
+    }
+    T step = abs((r - (T)horizon) / pr) / precision;
+    if (max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
+        step = abs(max_tstep / pt);
+    if (max_phistep > 0 && step > abs(max_phistep / pphi))
+        step = abs(max_phistep / pphi);
+    if (step < MIN_STEP) step = MIN_STEP;
+
+    // --- Main integration loop ---
+    while (r < rlim
+           && ((thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0)
+           && steps < steplim)
+    {
+        ++steps;
+
+        // === k1: momenta at current position, with sign-flip detection ===
+        {
+            const T sth  = sin(theta), cth = cos(theta), s2th = sth * sth;
+            const T rho2 = r*r + (a*cth)*(a*cth);
+            const T dlt  = r*r - 2*r + a*a;
+
+            pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
+            pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+
+            T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
+            if (thdotsq < 0 && thetasign_count >= COUNT_MIN)
+            {
+                thetadot_sign *= -1;
+                thetasign_count = 0;
+                continue;
+            }
+            if (thetasign_count <= COUNT_MIN) thetasign_count++;
+            ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+
+            T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+            if (rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+            {
+                rdot_sign *= -1;
+                rsign_count = 0;
+            }
+            else
+            {
+                rsign_count++;
+                rdotsign_unlocked = true;
+            }
+            pr = sqrt(abs(rdotsq)) * rdot_sign;
+        }
+
+        const T pt1 = pt, pr1 = pr, ptheta1 = ptheta, pphi1 = pphi;
+
+        if (pt1 <= 0)
+            rays[ray].status |= RAY_STATUS_ERGO;
+        {
+            const T sth = sin(theta), s2th = sth * sth;
+            const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
+            if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
+                rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+        }
+
+        // --- Adaptive sub-loop: retry with smaller step until normalised error <= 1 ---
+        bool step_accepted = false;
+        while (!step_accepted)
+        {
+            // Clamp the trial step to avoid overshooting hard boundaries.
+            // A clamped step is accepted normally but does not update the running step size.
+            T h_try  = step;
+            bool clamped = false;
+            if (rlim > 0 && r + pr1 * h_try > rlim)
+            {
+                h_try  = abs((rlim - r) / pr1);
+                clamped = true;
+            }
+            if (thetalim > 0 && theta + ptheta1 * h_try > thetalim)
+            {
+                T h_th = abs((thetalim - theta) / ptheta1);
+                if (h_th < h_try) { h_try = h_th; clamped = true; }
+            }
+
+            // === k2 ===
+            T pt2, pr2, ptheta2, pphi2;
+            momentum_from_consts<T>(pt2, pr2, ptheta2, pphi2, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*a21*pr1,
+                                    theta + h_try*a21*ptheta1, phi, a);
+
+            // === k3 ===
+            T pt3, pr3, ptheta3, pphi3;
+            momentum_from_consts<T>(pt3, pr3, ptheta3, pphi3, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a31*pr1     + a32*pr2),
+                                    theta + h_try*(a31*ptheta1 + a32*ptheta2), phi, a);
+
+            // === k4 ===
+            T pt4, pr4, ptheta4, pphi4;
+            momentum_from_consts<T>(pt4, pr4, ptheta4, pphi4, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a41*pr1     + a42*pr2     + a43*pr3),
+                                    theta + h_try*(a41*ptheta1 + a42*ptheta2 + a43*ptheta3), phi, a);
+
+            // === k5 ===
+            T pt5, pr5, ptheta5, pphi5;
+            momentum_from_consts<T>(pt5, pr5, ptheta5, pphi5, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a51*pr1     + a52*pr2     + a53*pr3     + a54*pr4),
+                                    theta + h_try*(a51*ptheta1 + a52*ptheta2 + a53*ptheta3 + a54*ptheta4),
+                                    phi, a);
+
+            // === k6 ===
+            T pt6, pr6, ptheta6, pphi6;
+            momentum_from_consts<T>(pt6, pr6, ptheta6, pphi6, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a61*pr1     + a62*pr2     + a63*pr3     + a64*pr4     + a65*pr5),
+                                    theta + h_try*(a61*ptheta1 + a62*ptheta2 + a63*ptheta3 + a64*ptheta4 + a65*ptheta5),
+                                    phi, a);
+
+            // === 5th-order solution (local extrapolation; b2=0 so k2 is absent) ===
+            T r_new     = r     + h_try*(b1*pr1     + b3*pr3     + b4*pr4     + b5*pr5     + b6*pr6);
+            T theta_new = theta + h_try*(b1*ptheta1  + b3*ptheta3  + b4*ptheta4  + b5*ptheta5  + b6*ptheta6);
+            T t_new     = t     + h_try*(b1*pt1     + b3*pt3     + b4*pt4     + b5*pt5     + b6*pt6);
+            T phi_new   = phi   + h_try*(b1*pphi1   + b3*pphi3   + b4*pphi4   + b5*pphi5   + b6*pphi6);
+
+            // === k7: FSAL evaluation at the 5th-order estimate (needed for error estimate) ===
+            T pt7, pr7, ptheta7, pphi7;
+            momentum_from_consts<T>(pt7, pr7, ptheta7, pphi7, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r_new, theta_new, phi_new, a);
+
+            // === Error estimate: e_i = b_i - b*_i ===
+            T err_r     = h_try*(e1*pr1     + e3*pr3     + e4*pr4     + e5*pr5     + e6*pr6     + e7*pr7);
+            T err_theta = h_try*(e1*ptheta1  + e3*ptheta3  + e4*ptheta4  + e5*ptheta5  + e6*ptheta6  + e7*ptheta7);
+
+            // Mixed absolute/relative norm; +1 in sc prevents blow-up near theta=0
+            T sc_r     = tol * (T(1) + max(abs(r),     abs(r_new)));
+            T sc_theta = tol * (T(1) + max(abs(theta), abs(theta_new)));
+            T err_norm = sqrt(T(0.5)*((err_r/sc_r)*(err_r/sc_r) + (err_theta/sc_theta)*(err_theta/sc_theta)));
+
+            // === Step-size prediction ===
+            T fac      = safety * pow(T(1) / max(err_norm, T(1e-10)), T(0.2));
+            fac        = max(fac_min, min(fac_max, fac));
+            T step_new = h_try * fac;
+
+            if (err_norm <= T(1))
+            {
+                // Step accepted: commit new state
+                t = t_new; r = r_new; theta = theta_new; phi = phi_new;
+                pt = pt7; pr = pr7; ptheta = ptheta7; pphi = pphi7;
+                if (!clamped) step = max(step_new, (T)MIN_STEP);
+                step_accepted = true;
+            }
+            else
+            {
+                // Step rejected: shrink and retry
+                step = max(step_new, (T)MIN_STEP);
+                if (step <= (T)MIN_STEP)
+                {
+                    // Cannot shrink further; force-accept to avoid an infinite loop
+                    t = t_new; r = r_new; theta = theta_new; phi = phi_new;
+                    pt = pt7; pr = pr7; ptheta = ptheta7; pphi = pphi7;
+                    step_accepted = true;
+                }
+            }
+        }  // end adaptive sub-loop
+
+        if (r <= horizon)
+        {
+            rays[ray].status |= RAY_STATUS_HORIZON;
+            break;
+        }
+
+        if (outfile != nullptr && (steps % write_step) == 0)
+        {
+            if ((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin))
+            {
+                write_started = true;
+                if (write_cartesian)
+                {
+                    cartesian<T>(x, y, z, r, theta, phi, a);
+                    (*outfile) << t << x << y << z << endl;
+                }
+                else
+                {
+                    (*outfile) << t << r << theta << phi << endl;
+                }
+            }
+            else if (write_started)
+            {
+                break;
+            }
+        }
+    }  // end main loop
+
+    if (steps >= steplim)
+        rays[ray].status |= RAY_STATUS_STEPLIM;
+    else if (r >= rlim)
+        rays[ray].status |= RAY_STATUS_RLIM;
+    else if ((thetalim > 0 && theta >= thetalim) || (thetalim < 0 && theta <= abs(thetalim)))
+        rays[ray].status |= RAY_STATUS_DEST;
+
+    rays[ray].t           = t;
+    rays[ray].r           = r;
+    rays[ray].theta       = theta;
+    rays[ray].phi         = phi;
+    rays[ray].pt          = pt;
+    rays[ray].pr          = pr;
+    rays[ray].ptheta      = ptheta;
+    rays[ray].pphi        = pphi;
+    rays[ray].rdot_sign   = rdot_sign;
+    rays[ray].thetadot_sign = thetadot_sign;
+
+    if (steps > 0) rays[ray].steps += steps;
+    return steps;
+}
+
+template <typename T>
+void Raytracer<T>::run_raytrace_rk45(T r_max, RayDestination<T>* dest, int show_progress,
+                                      TextOutput* outfile, int write_step,
+                                      T write_rmax, T write_rmin, bool write_cartesian)
+{
+    cout << "Running raytracer (RK45/DOPRI5)..." << endl;
+
+    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    show_progress = abs(show_progress);
+
+    if (outfile != nullptr) {
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= STEPLIM) continue;
+
+            propagate_rk45(ray, r_max, dest, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+            outfile->newline(2);
+        }
+    } else {
+        #pragma omp parallel for schedule(dynamic)
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) {
+                #pragma omp critical
+                prog.show(ray + 1);
+            }
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= STEPLIM) continue;
+
+            propagate_rk45(ray, r_max, dest, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+        }
+    }
+    prog.done();
+}
+
+template <typename T>
+inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>* dest, const int steplim,
+                                         TextOutput* outfile, int write_step,
+                                         T write_rmax, T write_rmin, bool write_cartesian)
+{
+    //
+    // Identical to propagate_rk45(ray, rlim, thetalim, ...) except the polar-angle stopping
+    // condition is replaced by a call to dest->reached(r, theta, phi) after each accepted step.
+    //
+
+    int steps = 0;
+
+    int rsign_count      = COUNT_MIN;
+    int thetasign_count  = COUNT_MIN;
+    bool rdotsign_unlocked     = false;
+    bool thetadotsign_unlocked = false;
+
+    T x, y, z;
+
+    T a      = spin;
+    T t      = rays[ray].t;
+    T r      = rays[ray].r;
+    T theta  = rays[ray].theta;
+    T phi    = rays[ray].phi;
+    T pt     = rays[ray].pt;
+    T pr     = rays[ray].pr;
+    T ptheta = rays[ray].ptheta;
+    T pphi   = rays[ray].pphi;
+    int rdot_sign     = rays[ray].rdot_sign;
+    int thetadot_sign = rays[ray].thetadot_sign;
+
+    const T k = rays[ray].k;
+    const T h = rays[ray].h;
+    const T Q = rays[ray].Q;
+
+    bool write_started = false;
+
+    // DOPRI5 tableau (same constants as propagate_rk45 theta_max overload)
+    static constexpr T a21 = T(1)/5;
+    static constexpr T a31 = T(3)/40,         a32 = T(9)/40;
+    static constexpr T a41 = T(44)/45,         a42 = T(-56)/15,        a43 = T(32)/9;
+    static constexpr T a51 = T(19372)/6561,    a52 = T(-25360)/2187,   a53 = T(64448)/6561,  a54 = T(-212)/729;
+    static constexpr T a61 = T(9017)/3168,     a62 = T(-355)/33,       a63 = T(46732)/5247,
+                        a64 = T(49)/176,        a65 = T(-5103)/18656;
+    static constexpr T b1 = T(35)/384,    b3 = T(500)/1113,   b4 = T(125)/192,
+                        b5 = T(-2187)/6784, b6 = T(11)/84;
+    static constexpr T e1 = T(71)/57600,      e3 = T(-71)/16695,     e4 = T(71)/1920,
+                        e5 = T(-17253)/339200, e6 = T(22)/525,        e7 = T(-1)/40;
+
+    static constexpr T safety  = T(0.9);
+    static constexpr T fac_max = T(5.0);
+    static constexpr T fac_min = T(0.1);
+    static constexpr T tol     = T(1e-8);
+
+    {
+        const T sth = sin(theta), cth = cos(theta), s2th = sth * sth;
+        const T rho2 = r*r + (a*cth)*(a*cth);
+        const T dlt  = r*r - 2*r + a*a;
+        pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
+        pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+        T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
+        ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+        T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+        pr = sqrt(abs(rdotsq)) * rdot_sign;
+    }
+    T step = abs((r - (T)horizon) / pr) / precision;
+    if (max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
+        step = abs(max_tstep / pt);
+    if (max_phistep > 0 && step > abs(max_phistep / pphi))
+        step = abs(max_phistep / pphi);
+    if (step < MIN_STEP) step = MIN_STEP;
+
+    while (r < rlim && steps < steplim)
+    {
+        ++steps;
+
+        // === k1 with sign-flip detection ===
+        {
+            const T sth  = sin(theta), cth = cos(theta), s2th = sth * sth;
+            const T rho2 = r*r + (a*cth)*(a*cth);
+            const T dlt  = r*r - 2*r + a*a;
+
+            pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
+            pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+
+            T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
+            if (thdotsq < 0 && thetasign_count >= COUNT_MIN)
+            {
+                thetadot_sign *= -1;
+                thetasign_count = 0;
+                continue;
+            }
+            if (thetasign_count <= COUNT_MIN) thetasign_count++;
+            ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+
+            T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+            if (rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+            {
+                rdot_sign *= -1;
+                rsign_count = 0;
+            }
+            else
+            {
+                rsign_count++;
+                rdotsign_unlocked = true;
+            }
+            pr = sqrt(abs(rdotsq)) * rdot_sign;
+        }
+
+        const T pt1 = pt, pr1 = pr, ptheta1 = ptheta, pphi1 = pphi;
+
+        if (pt1 <= 0)
+            rays[ray].status |= RAY_STATUS_ERGO;
+        {
+            const T sth = sin(theta), s2th = sth * sth;
+            const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
+            if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
+                rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+        }
+
+        bool step_accepted = false;
+        while (!step_accepted)
+        {
+            T h_try  = step;
+            bool clamped = false;
+            if (rlim > 0 && r + pr1 * h_try > rlim)
+            {
+                h_try  = abs((rlim - r) / pr1);
+                clamped = true;
+            }
+
+            // === k2-k6 ===
+            T pt2, pr2, ptheta2, pphi2;
+            momentum_from_consts<T>(pt2, pr2, ptheta2, pphi2, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*a21*pr1,
+                                    theta + h_try*a21*ptheta1, phi, a);
+
+            T pt3, pr3, ptheta3, pphi3;
+            momentum_from_consts<T>(pt3, pr3, ptheta3, pphi3, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a31*pr1     + a32*pr2),
+                                    theta + h_try*(a31*ptheta1 + a32*ptheta2), phi, a);
+
+            T pt4, pr4, ptheta4, pphi4;
+            momentum_from_consts<T>(pt4, pr4, ptheta4, pphi4, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a41*pr1     + a42*pr2     + a43*pr3),
+                                    theta + h_try*(a41*ptheta1 + a42*ptheta2 + a43*ptheta3), phi, a);
+
+            T pt5, pr5, ptheta5, pphi5;
+            momentum_from_consts<T>(pt5, pr5, ptheta5, pphi5, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a51*pr1     + a52*pr2     + a53*pr3     + a54*pr4),
+                                    theta + h_try*(a51*ptheta1 + a52*ptheta2 + a53*ptheta3 + a54*ptheta4),
+                                    phi, a);
+
+            T pt6, pr6, ptheta6, pphi6;
+            momentum_from_consts<T>(pt6, pr6, ptheta6, pphi6, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r + h_try*(a61*pr1     + a62*pr2     + a63*pr3     + a64*pr4     + a65*pr5),
+                                    theta + h_try*(a61*ptheta1 + a62*ptheta2 + a63*ptheta3 + a64*ptheta4 + a65*ptheta5),
+                                    phi, a);
+
+            // === 5th-order solution ===
+            T r_new     = r     + h_try*(b1*pr1     + b3*pr3     + b4*pr4     + b5*pr5     + b6*pr6);
+            T theta_new = theta + h_try*(b1*ptheta1  + b3*ptheta3  + b4*ptheta4  + b5*ptheta5  + b6*ptheta6);
+            T t_new     = t     + h_try*(b1*pt1     + b3*pt3     + b4*pt4     + b5*pt5     + b6*pt6);
+            T phi_new   = phi   + h_try*(b1*pphi1   + b3*pphi3   + b4*pphi4   + b5*pphi5   + b6*pphi6);
+
+            // === k7 (FSAL) ===
+            T pt7, pr7, ptheta7, pphi7;
+            momentum_from_consts<T>(pt7, pr7, ptheta7, pphi7, k, h, Q,
+                                    rdot_sign, thetadot_sign,
+                                    r_new, theta_new, phi_new, a);
+
+            // === Error estimate ===
+            T err_r     = h_try*(e1*pr1     + e3*pr3     + e4*pr4     + e5*pr5     + e6*pr6     + e7*pr7);
+            T err_theta = h_try*(e1*ptheta1  + e3*ptheta3  + e4*ptheta4  + e5*ptheta5  + e6*ptheta6  + e7*ptheta7);
+
+            T sc_r     = tol * (T(1) + max(abs(r),     abs(r_new)));
+            T sc_theta = tol * (T(1) + max(abs(theta), abs(theta_new)));
+            T err_norm = sqrt(T(0.5)*((err_r/sc_r)*(err_r/sc_r) + (err_theta/sc_theta)*(err_theta/sc_theta)));
+
+            T fac      = safety * pow(T(1) / max(err_norm, T(1e-10)), T(0.2));
+            fac        = max(fac_min, min(fac_max, fac));
+            T step_new = h_try * fac;
+
+            if (err_norm <= T(1))
+            {
+                t = t_new; r = r_new; theta = theta_new; phi = phi_new;
+                pt = pt7; pr = pr7; ptheta = ptheta7; pphi = pphi7;
+                if (!clamped) step = max(step_new, (T)MIN_STEP);
+                step_accepted = true;
+            }
+            else
+            {
+                step = max(step_new, (T)MIN_STEP);
+                if (step <= (T)MIN_STEP)
+                {
+                    t = t_new; r = r_new; theta = theta_new; phi = phi_new;
+                    pt = pt7; pr = pr7; ptheta = ptheta7; pphi = pphi7;
+                    step_accepted = true;
+                }
+            }
+        }
+
+        if (r <= horizon)
+        {
+            rays[ray].status |= RAY_STATUS_HORIZON;
+            break;
+        }
+        if (dest->reached(r, theta, phi))
+        {
+            rays[ray].status |= RAY_STATUS_DEST;
+            break;
+        }
+
+        if (outfile != nullptr && (steps % write_step) == 0)
+        {
+            if ((write_rmax < 0 || r < write_rmax) && (write_rmin < 0 || r > write_rmin))
+            {
+                write_started = true;
+                if (write_cartesian)
+                {
+                    cartesian<T>(x, y, z, r, theta, phi, a);
+                    (*outfile) << t << x << y << z << endl;
+                }
+                else
+                {
+                    (*outfile) << t << r << theta << phi << endl;
+                }
+            }
+            else if (write_started)
+            {
+                break;
+            }
+        }
+    }
+
+    if (steps >= steplim)
+        rays[ray].status |= RAY_STATUS_STEPLIM;
+    else if (r >= rlim)
+        rays[ray].status |= RAY_STATUS_RLIM;
+
+    rays[ray].t           = t;
+    rays[ray].r           = r;
+    rays[ray].theta       = theta;
+    rays[ray].phi         = phi;
+    rays[ray].pt          = pt;
+    rays[ray].pr          = pr;
+    rays[ray].ptheta      = ptheta;
+    rays[ray].pphi        = pphi;
+    rays[ray].rdot_sign   = rdot_sign;
+    rays[ray].thetadot_sign = thetadot_sign;
+
+    if (steps > 0) rays[ray].steps += steps;
+    return steps;
+}
+
 template class Raytracer<double>;
 template class Raytracer<float>;
