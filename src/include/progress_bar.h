@@ -17,12 +17,12 @@ class ProgressBar
 private:
 	long end;
 	int length;
-	char* label;
+	const char* label;
 	int digits;
 	bool draw_bar;
 
 public:
-	ProgressBar(long end, char* init_label = "", int init_length = 0, bool init_draw = true) : end(end), length(init_length), label(init_label), draw_bar(init_draw)
+	ProgressBar(long end, const char* init_label = "", int init_length = 0, bool init_draw = true) : end(end), length(init_length), label(init_label), draw_bar(init_draw)
 	{
 		if(length == 0)
 		{
