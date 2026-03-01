@@ -119,8 +119,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 	//
 	int steps = 0;
 
-	int rsign_count = COUNT_MIN;
-	int thetasign_count = COUNT_MIN;
+	bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
+	bool theta_was_positive = true;   // allow flip on first step if initial direction is wrong
 
 	T rhosq, delta;
 	T rdotsq, thetadotsq;
@@ -148,8 +148,6 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 
 	bool write_started = false;
 
-	bool rdotsign_unlocked = false;
-	bool thetadotsign_unlocked = false;
 
 	// integrate geodesic equations until limit reached
 	// if thetalim is positive, we go until theta exceeds it, if it is negative, we go until it is less than the abs value to allow tracing back to theta=0
@@ -177,13 +175,13 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		thetadotsq = Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta);
 		thetadotsq = thetadotsq / (rhosq*rhosq);
 
-		if(thetadotsq < 0 && thetasign_count >= COUNT_MIN)
+		if (thetadotsq < 0 && theta_was_positive)
 		{
 			thetadot_sign *= -1;
-			thetasign_count = 0;
+			theta_was_positive = false;
 			continue;
 		}
-		if (thetasign_count <= COUNT_MIN) thetasign_count++;
+		if (thetadotsq >= 0) theta_was_positive = true;
 
 		// take the square roots and get the right signs
 		ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
@@ -192,16 +190,14 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
 		rdotsq = rdotsq * delta/rhosq;
 
-		if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+		if (rdotsq <= 0 && r_was_positive)
 		{
 			rdot_sign *= -1;
-			rsign_count = 0;
-			//continue;
+			r_was_positive = false;
 		}
-		else
+		else if (rdotsq > 0)
 		{
-			rsign_count++;
-			rdotsign_unlocked = true;
+			r_was_positive = true;
 		}
 
 		pr = sqrt(abs(rdotsq)) * rdot_sign;
@@ -779,8 +775,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 	//
 	int steps = 0;
 
-	int rsign_count = COUNT_MIN;
-	int thetasign_count = COUNT_MIN;
+	bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
+	bool theta_was_positive = true;   // allow flip on first step if initial direction is wrong
 
 	T rdotsq, thetadotsq;
 
@@ -807,8 +803,6 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 
 	bool write_started = false;
 
-	bool rdotsign_unlocked = false;
-	bool thetadotsign_unlocked = false;
 
 	while( r < rlim  && ( (thetalim > 0 && theta < thetalim) || (thetalim < 0 && theta > abs(thetalim)) || thetalim == 0 )  &&  steps < steplim )
 	{
@@ -835,13 +829,13 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		thetadotsq = Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta);
 		thetadotsq = thetadotsq / (rhosq*rhosq);
 
-		if(thetadotsq < 0 && thetasign_count >= COUNT_MIN)
+		if (thetadotsq < 0 && theta_was_positive)
 		{
 			thetadot_sign *= -1;
-			thetasign_count = 0;
+			theta_was_positive = false;
 			continue;
 		}
-		if (thetasign_count <= COUNT_MIN) thetasign_count++;
+		if (thetadotsq >= 0) theta_was_positive = true;
 
 		ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
 
@@ -849,15 +843,14 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
 		rdotsq = rdotsq * delta/rhosq;
 
-		if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+		if (rdotsq <= 0 && r_was_positive)
 		{
 			rdot_sign *= -1;
-			rsign_count = 0;
+			r_was_positive = false;
 		}
-		else
+		else if (rdotsq > 0)
 		{
-			rsign_count++;
-			rdotsign_unlocked = true;
+			r_was_positive = true;
 		}
 
 		pr = sqrt(abs(rdotsq)) * rdot_sign;
@@ -1031,8 +1024,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 	//
 	int steps = 0;
 
-	int rsign_count = COUNT_MIN;
-	int thetasign_count = COUNT_MIN;
+	bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
+	bool theta_was_positive = true;   // allow flip on first step if initial direction is wrong
 
 	T rdotsq, thetadotsq;
 
@@ -1059,8 +1052,6 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 
 	bool write_started = false;
 
-	bool rdotsign_unlocked = false;
-	bool thetadotsign_unlocked = false;
 
 	while( r < rlim && steps < steplim )
 	{
@@ -1087,13 +1078,13 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		thetadotsq = Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta);
 		thetadotsq = thetadotsq / (rhosq*rhosq);
 
-		if(thetadotsq < 0 && thetasign_count >= COUNT_MIN)
+		if (thetadotsq < 0 && theta_was_positive)
 		{
 			thetadot_sign *= -1;
-			thetasign_count = 0;
+			theta_was_positive = false;
 			continue;
 		}
-		if (thetasign_count <= COUNT_MIN) thetasign_count++;
+		if (thetadotsq >= 0) theta_was_positive = true;
 
 		ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
 
@@ -1101,15 +1092,14 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		rdotsq = k*pt - h*pphi - rhosq*ptheta*ptheta;
 		rdotsq = rdotsq * delta/rhosq;
 
-		if(rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+		if (rdotsq <= 0 && r_was_positive)
 		{
 			rdot_sign *= -1;
-			rsign_count = 0;
+			r_was_positive = false;
 		}
-		else
+		else if (rdotsq > 0)
 		{
-			rsign_count++;
-			rdotsign_unlocked = true;
+			r_was_positive = true;
 		}
 
 		pr = sqrt(abs(rdotsq)) * rdot_sign;
@@ -1297,10 +1287,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
 
     int steps = 0;
 
-    int rsign_count      = COUNT_MIN;
-    int thetasign_count  = COUNT_MIN;
-    bool rdotsign_unlocked    = false;
-    bool thetadotsign_unlocked = false;   // declared for symmetry; sign-flip uses thetasign_count
+    bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
+    bool theta_was_positive = true;   // allow flip on first step if initial direction is wrong
 
     T x, y, z;
 
@@ -1352,14 +1340,14 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     // Seed the running step size with the same heuristic as propagate()/propagate_rk4().
     // The adaptive controller will adjust this from the very first step.
     {
-        const T sth = sin(theta), cth = cos(theta), s2th = sth * sth;
-        const T rho2 = r*r + (a*cth)*(a*cth);
-        const T dlt  = r*r - 2*r + a*a;
-        pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
-        pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
-        T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
-        ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
-        T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+        const T sin_theta = sin(theta), cos_theta = cos(theta), sin2theta = sin_theta * sin_theta;
+        const T rhosq = r*r + (a*cos_theta)*(a*cos_theta);
+        const T delta  = r*r - 2*r + a*a;
+        pt   = ((rhosq*(r*r + a*a) + 2*a*a*r*sin2theta)*k - 2*a*r*h) / (rhosq * delta);
+        pphi = (2*a*r*sin2theta*k + (rhosq - 2*r)*h) / (sin2theta * rhosq * delta);
+        T thetadotsq = (Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta)) / (rhosq*rhosq);
+        ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
+        T rdotsq = (k*pt - h*pphi - rhosq*ptheta*ptheta) * delta / rhosq;
         pr = sqrt(abs(rdotsq)) * rdot_sign;
     }
     T step = abs((r - (T)horizon) / pr) / precision;
@@ -1380,33 +1368,32 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
 
         // === k1: momenta at current position, with sign-flip detection ===
         {
-            const T sth  = sin(theta), cth = cos(theta), s2th = sth * sth;
-            const T rho2 = r*r + (a*cth)*(a*cth);
-            const T dlt  = r*r - 2*r + a*a;
+            const T sin_theta = sin(theta), cos_theta = cos(theta), sin2theta = sin_theta * sin_theta;
+            const T rhosq = r*r + (a*cos_theta)*(a*cos_theta);
+            const T delta  = r*r - 2*r + a*a;
 
-            pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
-            pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+            pt   = ((rhosq*(r*r + a*a) + 2*a*a*r*sin2theta)*k - 2*a*r*h) / (rhosq * delta);
+            pphi = (2*a*r*sin2theta*k + (rhosq - 2*r)*h) / (sin2theta * rhosq * delta);
 
-            T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
-            if (thdotsq < 0 && thetasign_count >= COUNT_MIN)
+            T thetadotsq = (Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta)) / (rhosq*rhosq);
+            if (thetadotsq < 0 && theta_was_positive)
             {
                 thetadot_sign *= -1;
-                thetasign_count = 0;
+                theta_was_positive = false;
                 continue;
             }
-            if (thetasign_count <= COUNT_MIN) thetasign_count++;
-            ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+            if (thetadotsq >= 0) theta_was_positive = true;
+            ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
 
-            T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
-            if (rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+            T rdotsq = (k*pt - h*pphi - rhosq*ptheta*ptheta) * delta / rhosq;
+            if (rdotsq <= 0 && r_was_positive)
             {
                 rdot_sign *= -1;
-                rsign_count = 0;
+                r_was_positive = false;
             }
-            else
+            else if (rdotsq > 0)
             {
-                rsign_count++;
-                rdotsign_unlocked = true;
+                r_was_positive = true;
             }
             pr = sqrt(abs(rdotsq)) * rdot_sign;
         }
@@ -1416,9 +1403,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
         if (pt1 <= 0)
             rays[ray].status |= RAY_STATUS_ERGO;
         {
-            const T sth = sin(theta), s2th = sth * sth;
-            const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
-            if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
+            const T sin_theta = sin(theta), sin2theta = sin_theta * sin_theta;
+            const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+            if ((1 - 2*r/rhosq)*pt1 + (2*a*r*sin2theta/rhosq)*pphi1 < 0)
                 rays[ray].status |= RAY_STATUS_NEG_ENERGY;
         }
 
@@ -1651,10 +1638,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
 
     int steps = 0;
 
-    int rsign_count      = COUNT_MIN;
-    int thetasign_count  = COUNT_MIN;
-    bool rdotsign_unlocked     = false;
-    bool thetadotsign_unlocked = false;
+    bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
+    bool theta_was_positive = true;   // allow flip on first step if initial direction is wrong
 
     T x, y, z;
 
@@ -1691,17 +1676,17 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
     static constexpr T safety  = T(0.9);
     static constexpr T fac_max = T(5.0);
     static constexpr T fac_min = T(0.1);
-    static constexpr T tol     = T(1e-8);
+    const            T tol     = rk45_tol;  // tunable via set_rk45_tol()
 
     {
-        const T sth = sin(theta), cth = cos(theta), s2th = sth * sth;
-        const T rho2 = r*r + (a*cth)*(a*cth);
-        const T dlt  = r*r - 2*r + a*a;
-        pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
-        pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
-        T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
-        ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
-        T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
+        const T sin_theta = sin(theta), cos_theta = cos(theta), sin2theta = sin_theta * sin_theta;
+        const T rhosq = r*r + (a*cos_theta)*(a*cos_theta);
+        const T delta  = r*r - 2*r + a*a;
+        pt   = ((rhosq*(r*r + a*a) + 2*a*a*r*sin2theta)*k - 2*a*r*h) / (rhosq * delta);
+        pphi = (2*a*r*sin2theta*k + (rhosq - 2*r)*h) / (sin2theta * rhosq * delta);
+        T thetadotsq = (Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta)) / (rhosq*rhosq);
+        ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
+        T rdotsq = (k*pt - h*pphi - rhosq*ptheta*ptheta) * delta / rhosq;
         pr = sqrt(abs(rdotsq)) * rdot_sign;
     }
     T step = abs((r - (T)horizon) / pr) / precision;
@@ -1719,33 +1704,32 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
 
         // === k1 with sign-flip detection ===
         {
-            const T sth  = sin(theta), cth = cos(theta), s2th = sth * sth;
-            const T rho2 = r*r + (a*cth)*(a*cth);
-            const T dlt  = r*r - 2*r + a*a;
+            const T sin_theta = sin(theta), cos_theta = cos(theta), sin2theta = sin_theta * sin_theta;
+            const T rhosq = r*r + (a*cos_theta)*(a*cos_theta);
+            const T delta  = r*r - 2*r + a*a;
 
-            pt   = ((rho2*(r*r + a*a) + 2*a*a*r*s2th)*k - 2*a*r*h) / (rho2 * dlt);
-            pphi = (2*a*r*s2th*k + (rho2 - 2*r)*h) / (s2th * rho2 * dlt);
+            pt   = ((rhosq*(r*r + a*a) + 2*a*a*r*sin2theta)*k - 2*a*r*h) / (rhosq * delta);
+            pphi = (2*a*r*sin2theta*k + (rhosq - 2*r)*h) / (sin2theta * rhosq * delta);
 
-            T thdotsq = (Q + (k*a*cth + h*cth/sth)*(k*a*cth - h*cth/sth)) / (rho2*rho2);
-            if (thdotsq < 0 && thetasign_count >= COUNT_MIN)
+            T thetadotsq = (Q + (k*a*cos_theta + h*cos_theta/sin_theta)*(k*a*cos_theta - h*cos_theta/sin_theta)) / (rhosq*rhosq);
+            if (thetadotsq < 0 && theta_was_positive)
             {
                 thetadot_sign *= -1;
-                thetasign_count = 0;
+                theta_was_positive = false;
                 continue;
             }
-            if (thetasign_count <= COUNT_MIN) thetasign_count++;
-            ptheta = sqrt(abs(thdotsq)) * thetadot_sign;
+            if (thetadotsq >= 0) theta_was_positive = true;
+            ptheta = sqrt(abs(thetadotsq)) * thetadot_sign;
 
-            T rdotsq = (k*pt - h*pphi - rho2*ptheta*ptheta) * dlt / rho2;
-            if (rdotsign_unlocked && rdotsq <= 0 && rsign_count >= COUNT_MIN)
+            T rdotsq = (k*pt - h*pphi - rhosq*ptheta*ptheta) * delta / rhosq;
+            if (rdotsq <= 0 && r_was_positive)
             {
                 rdot_sign *= -1;
-                rsign_count = 0;
+                r_was_positive = false;
             }
-            else
+            else if (rdotsq > 0)
             {
-                rsign_count++;
-                rdotsign_unlocked = true;
+                r_was_positive = true;
             }
             pr = sqrt(abs(rdotsq)) * rdot_sign;
         }
@@ -1755,9 +1739,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
         if (pt1 <= 0)
             rays[ray].status |= RAY_STATUS_ERGO;
         {
-            const T sth = sin(theta), s2th = sth * sth;
-            const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
-            if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
+            const T sin_theta = sin(theta), sin2theta = sin_theta * sin_theta;
+            const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+            if ((1 - 2*r/rhosq)*pt1 + (2*a*r*sin2theta/rhosq)*pphi1 < 0)
                 rays[ray].status |= RAY_STATUS_NEG_ENERGY;
         }
 

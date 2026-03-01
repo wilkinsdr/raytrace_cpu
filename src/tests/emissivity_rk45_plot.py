@@ -58,7 +58,7 @@ try:
     # -----------------------------------------------------------------------
     # Load CSV
     # -----------------------------------------------------------------------
-    data = np.loadtxt(csv_path, skiprows=1)   # skip header line
+    data = np.loadtxt(csv_path, skiprows=2)   # skip rk45_tol comment line + column header
 finally:
     os.unlink(csv_path)
 
