@@ -3,3 +3,12 @@ target_link_libraries(gsl_test GSL::gsl)
 
 add_executable(raytrace_rk4_test raytrace_rk4_test.cpp)
 target_link_libraries(raytrace_rk4_test pointsource raytracer)
+
+add_executable(emissivity_rk45_test emissivity_rk45_test.cpp)
+target_link_libraries(emissivity_rk45_test pointsource raytracer)
+
+add_executable(emissivity_rk45_plot emissivity_rk45_plot.cpp)
+target_link_libraries(emissivity_rk45_plot pointsource raytracer)
+
+add_executable(integrator_perf_test integrator_perf_test.cpp)
+target_link_libraries(integrator_perf_test pointsource raytracer)

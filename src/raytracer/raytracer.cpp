@@ -17,6 +17,7 @@ Raytracer<T>::Raytracer( int num_rays, T spin_par, T init_precision, T init_max_
 	, max_phistep(init_max_phistep)
 	, max_tstep(init_max_tstep)
     , maxtstep_rlim(MAXDT_RLIM)
+    , rk45_tol(T(1e-8))
 {
 	//
 	// Constructor function - allocates host and device memory for each ray to store ray position, momentum,
@@ -311,6 +312,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
     rays[ray].thetadot_sign = thetadot_sign;
 
 	if(steps > 0) rays[ray].steps += steps;
+	if (rays[ray].status & RAY_STATUS_STEPLIM)
+		rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
 
 	return steps;
 }
@@ -968,6 +971,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
     rays[ray].thetadot_sign = thetadot_sign;
 
 	if(steps > 0) rays[ray].steps += steps;
+	if (rays[ray].status & RAY_STATUS_STEPLIM)
+		rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
 
 	return steps;
 }
@@ -1220,6 +1225,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
     rays[ray].thetadot_sign = thetadot_sign;
 
 	if(steps > 0) rays[ray].steps += steps;
+	if (rays[ray].status & RAY_STATUS_STEPLIM)
+		rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
 
 	return steps;
 }
@@ -1242,9 +1249,9 @@ void Raytracer<T>::run_raytrace_rk45(T r_max, T theta_max, int show_progress, Te
         {
             if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= STEPLIM) continue;
+            else if (rays[ray].steps >= RK45_STEPLIM) continue;
 
-            propagate_rk45(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+            propagate_rk45(ray, r_max, theta_max, RK45_STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
             outfile->newline(2);
         }
     } else {
@@ -1256,9 +1263,9 @@ void Raytracer<T>::run_raytrace_rk45(T r_max, T theta_max, int show_progress, Te
                 prog.show(ray + 1);
             }
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= STEPLIM) continue;
+            else if (rays[ray].steps >= RK45_STEPLIM) continue;
 
-            propagate_rk45(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+            propagate_rk45(ray, r_max, theta_max, RK45_STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
         }
     }
     prog.done();
@@ -1340,7 +1347,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     static constexpr T safety  = T(0.9);    // conservative scale on predicted step
     static constexpr T fac_max = T(5.0);    // cap on per-step growth
     static constexpr T fac_min = T(0.1);    // floor on per-step shrink
-    static constexpr T tol     = T(1e-8);   // mixed absolute/relative error tolerance on (r, theta)
+    const            T tol     = rk45_tol;  // mixed abs/rel error tolerance; tunable via set_rk45_tol()
 
     // Seed the running step size with the same heuristic as propagate()/propagate_rk4().
     // The adaptive controller will adjust this from the very first step.
@@ -1356,6 +1363,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
         pr = sqrt(abs(rdotsq)) * rdot_sign;
     }
     T step = abs((r - (T)horizon) / pr) / precision;
+    if (abs(ptheta) > 0 && step > abs(theta / ptheta) / theta_precision)
+        step = abs(theta / ptheta) / theta_precision;
     if (max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
         step = abs(max_tstep / pt);
     if (max_phistep > 0 && step > abs(max_phistep / pphi))
@@ -1411,6 +1420,30 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
             const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
             if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
                 rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+        }
+
+        // --- Cap the adaptive step to prevent intermediate DOPRI5 stages from crossing the
+        //     event horizon.  The Butcher tableau has large negative coefficients (a42=-56/15,
+        //     a52=-25360/2187) that can push intermediate trial positions inside the horizon
+        //     when the step grows too large.  The error estimator misses this because both
+        //     4th- and 5th-order solutions share the corrupted intermediate stages.
+        //     Only the horizon cap is applied here.  The theta cap (used in the RK4 initial-
+        //     step seeding) is intentionally omitted: applying it on every outer iteration
+        //     would freeze the adaptive step at a tiny value for source geometries near the
+        //     polar axis (theta ~ 0), causing rays to hit the step-count limit.
+        {
+            T step_max = abs((r - (T)horizon) / pr1) / precision;
+            if (max_phistep > 0)
+            {
+                T step_phi = abs(max_phistep / pphi1);
+                if (step_phi < step_max) step_max = step_phi;
+            }
+            if (max_tstep > 0 && r < maxtstep_rlim)
+            {
+                T step_t = abs(max_tstep / pt1);
+                if (step_t < step_max) step_max = step_t;
+            }
+            if (step > step_max) step = step_max;
         }
 
         // --- Adaptive sub-loop: retry with smaller step until normalised error <= 1 ---
@@ -1564,6 +1597,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     rays[ray].thetadot_sign = thetadot_sign;
 
     if (steps > 0) rays[ray].steps += steps;
+    if (rays[ray].status & RAY_STATUS_STEPLIM)
+        rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
     return steps;
 }
 
@@ -1582,9 +1617,9 @@ void Raytracer<T>::run_raytrace_rk45(T r_max, RayDestination<T>* dest, int show_
         {
             if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= STEPLIM) continue;
+            else if (rays[ray].steps >= RK45_STEPLIM) continue;
 
-            propagate_rk45(ray, r_max, dest, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
+            propagate_rk45(ray, r_max, dest, RK45_STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
             outfile->newline(2);
         }
     } else {
@@ -1596,9 +1631,9 @@ void Raytracer<T>::run_raytrace_rk45(T r_max, RayDestination<T>* dest, int show_
                 prog.show(ray + 1);
             }
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= STEPLIM) continue;
+            else if (rays[ray].steps >= RK45_STEPLIM) continue;
 
-            propagate_rk45(ray, r_max, dest, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
+            propagate_rk45(ray, r_max, dest, RK45_STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
         }
     }
     prog.done();
@@ -1670,6 +1705,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
         pr = sqrt(abs(rdotsq)) * rdot_sign;
     }
     T step = abs((r - (T)horizon) / pr) / precision;
+    if (abs(ptheta) > 0 && step > abs(theta / ptheta) / theta_precision)
+        step = abs(theta / ptheta) / theta_precision;
     if (max_tstep > 0 && r < maxtstep_rlim && step > abs(max_tstep / pt))
         step = abs(max_tstep / pt);
     if (max_phistep > 0 && step > abs(max_phistep / pphi))
@@ -1722,6 +1759,24 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             const T rho2 = r*r + (a*cos(theta))*(a*cos(theta));
             if ((1 - 2*r/rho2)*pt1 + (2*a*r*s2th/rho2)*pphi1 < 0)
                 rays[ray].status |= RAY_STATUS_NEG_ENERGY;
+        }
+
+        // --- Cap the adaptive step to prevent intermediate DOPRI5 stages from crossing the
+        //     event horizon (same rationale as thetalim variant; theta cap intentionally
+        //     omitted to avoid trapping rays near polar-axis source geometries).
+        {
+            T step_max = abs((r - (T)horizon) / pr1) / precision;
+            if (max_phistep > 0)
+            {
+                T step_phi = abs(max_phistep / pphi1);
+                if (step_phi < step_max) step_max = step_phi;
+            }
+            if (max_tstep > 0 && r < maxtstep_rlim)
+            {
+                T step_t = abs(max_tstep / pt1);
+                if (step_t < step_max) step_max = step_t;
+            }
+            if (step > step_max) step = step_max;
         }
 
         bool step_accepted = false;
@@ -1861,6 +1916,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
     rays[ray].thetadot_sign = thetadot_sign;
 
     if (steps > 0) rays[ray].steps += steps;
+    if (rays[ray].status & RAY_STATUS_STEPLIM)
+        rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
     return steps;
 }
 

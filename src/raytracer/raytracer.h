@@ -30,6 +30,13 @@
 #define RLIM 1000
 // total number of steps allowed per ray before it's aborted
 #define STEPLIM 10000000
+// step limit for the RK45/DOPRI5 adaptive integrator.  Adaptive steps are
+// larger than fixed-step integrators, so legitimate rays finish in far fewer
+// steps.  Empirically (spin=0.998, lamppost r=5): well-behaved rays use
+// ≤34K steps; stuck photon-sphere orbiting rays never converge.  100K gives
+// ~3x headroom above the observed maximum while terminating stuck rays
+// 100x faster than STEPLIM.
+#define RK45_STEPLIM 100000
 // number of integration steps per GPU thread before integration is paused and kernel must be called again
 // to avoid thread time limits on GPUs running X servers
 #define THREAD_STEPLIM 10000000
@@ -79,6 +86,7 @@ private:
     T max_tstep;
     T max_phistep;
     T maxtstep_rlim;
+    T rk45_tol;          // per-step mixed abs/rel error tolerance for the DOPRI5 adaptive controller
 
 protected:	// these members need to be accessible by derived classes to set up different X-ray sources
 	int nRays;
@@ -166,6 +174,13 @@ public:
         precision = precision;
         theta_precision = theta_precision;
     }
+
+    // Set the per-step error tolerance for the DOPRI5 adaptive step controller.
+    // Smaller values force tighter accuracy and more steps; default is 1e-8.
+    // Useful for reducing photon-sphere separatrix sensitivity at the cost of
+    // longer run times.
+    void set_rk45_tol(T tol) { rk45_tol = tol; }
+    T    get_rk45_tol() const { return rk45_tol; }
 
     void set_max_tstep(T max, T rlim = MAXDT_RLIM)
     {
