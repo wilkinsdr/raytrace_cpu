@@ -87,6 +87,26 @@ Each application picks a ray source, runs ray traces, and computes specific obse
 | `lamppost/` | `pointsource_to_disc` | Lamppost geometry |
 | `healpix/` | `healpix_to_disc`, `healpix_disc_source_photonfrac` | Extended source simulations |
 
+### Raytracer integration methods
+
+The `Raytracer` class supports three integration methods selected via `enum class Integrator { Euler, RK4, RK45 }` (defined in `raytracer.h`).
+
+**`run_raytrace()`** has two overloads — one with a fixed `theta_max` stopping condition and one with a `RayDestination*` — each dispatching to the appropriate `propagate*` function via a switch on the `Integrator`:
+
+| Function | Method | Stopping condition |
+|---|---|---|
+| `propagate` | Euler (fixed-step) | theta limit |
+| `propagate_rk4` | RK4 | theta limit or `RayDestination` |
+| `propagate_rk45` | RK45/DOPRI5 | theta limit or `RayDestination` |
+
+- **Euler**: semi-analytic; re-derives all momenta from constants of motion `(k, h, Q)` at each position using `momentum_from_consts()` in `kerr.h`. Does not integrate momenta directly.
+- **RK4**: classical 4th-order Runge-Kutta with fixed step size; evaluates `momentum_from_consts()` at 4 trial positions.
+- **RK45**: adaptive Dormand-Prince (DOPRI5) with mixed absolute/relative error control. Tolerance tunable via `set_rk45_tol()` (default `1e-8`). Step limit `RK45_STEPLIM=100,000` (vs `STEPLIM=10,000,000` for fixed-step methods). FSAL not used — k1 recomputed each step to keep sign-flip logic consistent.
+
+**Sign-flip mechanism**: `rdot_sign` and `thetadot_sign` track direction reversals of dr/dλ and dθ/dλ. Flips are gated by boolean `r_was_positive` / `theta_was_positive` flags — a flip is allowed as soon as `rdotsq`/`thetadotsq` turns positive again (replacing an older `COUNT_MIN=100` consecutive-steps guard).
+
+**Ray status** is stored as bitwise flags in `ray.status`: `RAY_STATUS_DEST`, `RAY_STATUS_HORIZON`, `RAY_STATUS_RLIM`, `RAY_STATUS_STEPLIM`, `RAY_STATUS_ERGO`, `RAY_STATUS_NEG_ENERGY`. Failed rays have `ray.steps` negated.
+
 ### Adding a new application
 
 1. Create a subdirectory under `src/`
