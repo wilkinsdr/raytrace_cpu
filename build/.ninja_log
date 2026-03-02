@@ -1,0 +1,13 @@
+# ninja log v7
+1	368	1772464686897131409	src/raytracer/CMakeFiles/pointsource.dir/pointsource.cpp.o	15820653635992c
+2	431	1772464686897610453	src/emissivity/CMakeFiles/emissivity.dir/emissivity.cpp.o	f887cca0b0f5ce5a
+1	438	1772464686896637490	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	c5d901378e8bb383
+369	1741	1772464687265117731	/Users/wilkins.401/data/raytrace_cpu/obj/libpointsource.a	b5b90e9cb5e3bdf3
+438	1741	1772464687333902928	/Users/wilkins.401/data/raytrace_cpu/obj/libraytracer.a	b2d93e9fbad6a8bb
+1741	1813	1772464688636746778	/Users/wilkins.401/data/raytrace_cpu/bin/emissivity	f03aae44d02b565e
+6	455	1772485687013529024	src/raytracer/CMakeFiles/imageplane.dir/imageplane.cpp.o	481f52c21dcd4896
+6	521	1772485687013009229	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	c5d901378e8bb383
+6	528	1772485687013803692	src/imageplane/CMakeFiles/imageplane_disc_image.dir/imageplane_disc_image.cpp.o	2ed97f9bd508b811
+456	1179	1772485687463540987	/Users/wilkins.401/data/raytrace_cpu/obj/libimageplane.a	44d47b6e4b91286
+521	1180	1772485687528826361	/Users/wilkins.401/data/raytrace_cpu/obj/libraytracer.a	b2d93e9fbad6a8bb
+1180	1251	1772485688187219638	/Users/wilkins.401/data/raytrace_cpu/bin/imageplane_disc_image	5df8de58ef545017

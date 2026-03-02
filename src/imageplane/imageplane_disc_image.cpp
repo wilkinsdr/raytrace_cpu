@@ -31,17 +31,11 @@ int main(int argc, char **argv)
     ParameterArgs par_args(argc, argv);
 
     // parameter configuration file
-    char default_par_filename[] = "../par/imageplane_disc_image.par";
-    char *par_filename;
-    if(par_args.key_exists("--parfile"))
-    {
-        string par_filename_str = par_args.get_string_parameter("--parfile");
-        par_filename = (char *) par_filename_str.c_str();
-    }
-    else
-        par_filename = default_par_filename;
+    string par_filename = par_args.key_exists("--parfile")
+                          ? par_args.get_string_parameter("--parfile")
+                          : "../par/imageplane_disc_image.par";
 
-    ParameterFile par_file(par_filename);
+    ParameterFile par_file(par_filename.c_str());
     string out_filename = (par_args.key_exists("--outfile")) ? par_args.get_parameter<string>("--outfile")
                                                              : par_file.get_parameter<string>("outfile");
     double dist = par_file.get_parameter<double>("dist");
@@ -67,6 +61,18 @@ int main(int argc, char **argv)
     double precision = par_file.get_parameter<double>("precision", PRECISION);
     double max_tstep = par_file.get_parameter<double>("max_tstep", MAXDT);
     bool flip_image = par_file.get_parameter<bool>("flip_image", true);
+    string integrator_str = par_file.get_parameter<string>("integrator", "rk45");
+    double rk45_tol = par_file.get_parameter<double>("rk45_tol", 1e-8);
+    int show_progress = (par_args.key_exists("--show_progress")) ? par_args.get_parameter<int>("--show_progress")
+                                        : par_file.get_parameter<int>("show_progress", 1);
+
+    Integrator integrator;
+    if (integrator_str == "euler")
+        integrator = Integrator::Euler;
+    else if (integrator_str == "rk4")
+        integrator = Integrator::RK4;
+    else
+        integrator = Integrator::RK45;
 
     double dx = (xmax - x0) / Nx;
     double dy = (ymax - y0) / Ny;
@@ -103,9 +109,12 @@ int main(int argc, char **argv)
                                                 precision);
     //raytrace_source.set_max_tstep(max_tstep);
 
+    if (integrator == Integrator::RK45)
+        raytrace_source.set_rk45_tol(rk45_tol);
+
     raytrace_source.redshift_start();
-    raytrace_source.run_raytrace(Integrator::Euler, M_PI_2, 1.1 * dist);
-    raytrace_source.redshift(-1);
+    raytrace_source.run_raytrace(integrator, M_PI_2, 1.1 * dist, show_progress);
+    raytrace_source.redshift(-1.0, true);
     raytrace_source.range_phi();
     //raytrace_source.calculate_ray_angles(-1, true);
 
