@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 	TextOutput outfile(out_filename);
 
 	RaytraceSource = new PointSource<double>( source, V, spin, TOL, dcosalpha, dbeta, cosalpha0, cosalphamax, beta0, betamax );
-	RaytraceSource->run_raytrace(r_max, theta_max, show_progress, &outfile, write_step, write_rmax, write_rmin, write_cartesian);
+	RaytraceSource->run_raytrace(Integrator::Euler, theta_max, r_max, show_progress, &outfile, write_step, write_rmax, write_rmin, write_cartesian);
 
 	delete RaytraceSource;
 

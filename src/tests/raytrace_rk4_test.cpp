@@ -39,12 +39,12 @@ int main()
     // Run Euler integrator
     PointSource<double>* euler_src = new PointSource<double>(
         source, V, spin, TOL, dcosalpha, dbeta);
-    euler_src->run_raytrace(r_max, theta_max, 0);
+    euler_src->run_raytrace(Integrator::Euler, theta_max, r_max, 0);
 
     // Run RK4 integrator with identical initial conditions
     PointSource<double>* rk4_src = new PointSource<double>(
         source, V, spin, TOL, dcosalpha, dbeta);
-    rk4_src->run_raytrace_rk4(r_max, theta_max, 0);
+    rk4_src->run_raytrace(Integrator::RK4, theta_max, r_max, 0);
 
     // Compare results
     const int n = euler_src->get_count();

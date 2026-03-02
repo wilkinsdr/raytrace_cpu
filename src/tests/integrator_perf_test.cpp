@@ -73,9 +73,9 @@ static StepStats run_and_collect(bool use_rk45)
 
     auto t0 = chrono::high_resolution_clock::now();
     if (use_rk45)
-        src.run_raytrace_rk45(R_MAX, M_PI_2, SHOW_PROGRESS);
+        src.run_raytrace(Integrator::RK45, M_PI_2, R_MAX, SHOW_PROGRESS);
     else
-        src.run_raytrace_rk4 (R_MAX, M_PI_2, SHOW_PROGRESS);
+        src.run_raytrace(Integrator::RK4,  M_PI_2, R_MAX, SHOW_PROGRESS);
     auto t1 = chrono::high_resolution_clock::now();
 
     StepStats s{};

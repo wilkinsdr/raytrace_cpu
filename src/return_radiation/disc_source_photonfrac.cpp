@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 		                                    this_betamax);
 
 	raytrace_source.redshift_start();
-	raytrace_source.run_raytrace(1.1*r_esc, M_PI_2, show_progress);
+	raytrace_source.run_raytrace(Integrator::Euler, M_PI_2, 1.1*r_esc, show_progress);
 	raytrace_source.range_phi();
 	raytrace_source.redshift(-1);
 

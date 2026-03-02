@@ -7,6 +7,7 @@
 
 #include "raytracer.h"
 #include "ray_destination.h"
+#include <cassert>
 
 template <typename T>
 Raytracer<T>::Raytracer( int num_rays, T spin_par, T init_precision, T init_max_phistep, T init_max_tstep )
@@ -60,54 +61,61 @@ Raytracer<T>::~Raytracer( )
 }
 
 template <typename T>
-void Raytracer<T>::run_raytrace(T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
+                                int show_progress, TextOutput* outfile,
+                                int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
-	//
-	// Runs the ray tracing algorithm once the rays have been set up.
-	// Integration of geodesic equation for each ray proceeds until it reaches limiting radius or is lost through the event horizon.
-	// Alternatively, Integration stop when the maximum number of steps (defined by STEPLIM in the header file) is reached to prevent
-	// incredibly long loops of very small steps.
-	//
-	// To work around thread time limits on devices also running an X server, each kernel execution
-	// only integrates for the number of steps defined in THREAD_STEPLIM. An unfinished flag is then
-	// set and the kernel is executed repeatedly until each ray has finished.
-	//
-	// Calls the GPURaytrace kernel to perform calculation on the GPU.
-	//
-	// Arguments:
-	//	r_max		T		Limiting outer radius for propagation in Rg (default value = 1000)
-	//
-	cout << "Running raytracer..." << endl;
+    //
+    // Unified ray tracing entry point.  Selects the integration algorithm via the method argument:
+    //   Integrator::Euler — fixed-step Euler integrator (default)
+    //   Integrator::RK4   — classical 4th-order Runge-Kutta
+    //   Integrator::RK45  — adaptive Dormand-Prince RK45/DOPRI5
+    //
+    static const char* names[] = {
+        "Running raytracer...",
+        "Running raytracer (RK4)...",
+        "Running raytracer (RK45/DOPRI5)..."
+    };
+    const int steplim = (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
+    cout << names[static_cast<int>(method)] << endl;
 
-	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
     show_progress = abs(show_progress);
 
-	if (outfile != nullptr) {
-		// Serial path: ordered file writes required
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
+    if (outfile != nullptr) {
+        // Serial path: ordered file writes required
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= steplim) continue;
 
-			propagate(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-			outfile->newline(2);
-		}
-	} else {
-		// Parallel path: rays are fully independent, no file I/O
-		#pragma omp parallel for schedule(dynamic)
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) {
-				#pragma omp critical
-				prog.show(ray + 1);
-			}
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
+            switch (method) {
+                case Integrator::Euler: propagate    (ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+            }
+            outfile->newline(2);
+        }
+    } else {
+        // Parallel path: rays are fully independent, no file I/O
+        #pragma omp parallel for schedule(dynamic)
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) {
+                #pragma omp critical
+                prog.show(ray + 1);
+            }
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= steplim) continue;
 
-			propagate(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
-		}
-	}
+            switch (method) {
+                case Integrator::Euler: propagate    (ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+            }
+        }
+    }
     prog.done();
 }
 
@@ -723,47 +731,6 @@ void Raytracer<T>::calculate_momentum( )
 }
 
 template <typename T>
-void Raytracer<T>::run_raytrace_rk4(T r_max, T theta_max, int show_progress, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
-{
-	//
-	// Runs the ray tracing algorithm using the RK4 integrator.
-	// Same interface as run_raytrace(), but calls propagate_rk4() instead of propagate().
-	//
-	cout << "Running raytracer (RK4)..." << endl;
-
-	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
-    show_progress = abs(show_progress);
-
-	if (outfile != nullptr) {
-		// Serial path: ordered file writes required
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
-
-			propagate_rk4(ray, r_max, theta_max, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-			outfile->newline(2);
-		}
-	} else {
-		// Parallel path: rays are fully independent, no file I/O
-		#pragma omp parallel for schedule(dynamic)
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) {
-				#pragma omp critical
-				prog.show(ray + 1);
-			}
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
-
-			propagate_rk4(ray, r_max, theta_max, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
-		}
-	}
-    prog.done();
-}
-
-template <typename T>
 inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, const int steplim, TextOutput* outfile, int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
 	//
@@ -971,44 +938,59 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 }
 
 template <typename T>
-void Raytracer<T>::run_raytrace_rk4(T r_max, RayDestination<T>* dest, int show_progress,
-                                     TextOutput* outfile, int write_step,
-                                     T write_rmax, T write_rmin, bool write_cartesian)
+void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_max,
+                                int show_progress, TextOutput* outfile,
+                                int write_step, T write_rmax, T write_rmin, bool write_cartesian)
 {
-	//
-	// Runs the ray tracing algorithm using the RK4 integrator with a user-supplied stopping criterion.
-	// Same interface as run_raytrace_rk4(r_max, theta_max, ...) but accepts a RayDestination object
-	// whose reached(r, theta, phi) method is called after each step to determine termination.
-	//
-	cout << "Running raytracer (RK4)..." << endl;
+    //
+    // Unified ray tracing entry point with user-supplied stopping criterion.
+    // Accepts a RayDestination object whose reached(r, theta, phi) method is called after each step.
+    // Supports Integrator::RK4 and Integrator::RK45; Euler has no RayDestination propagate variant.
+    //
+    assert(method != Integrator::Euler && "Integrator::Euler does not support RayDestination stopping conditions");
+    static const char* names[] = {
+        "",                              // Euler — not supported here
+        "Running raytracer (RK4)...",
+        "Running raytracer (RK45/DOPRI5)..."
+    };
+    const int steplim = (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
+    cout << names[static_cast<int>(method)] << endl;
 
-	ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
+    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
     show_progress = abs(show_progress);
 
-	if (outfile != nullptr) {
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
+    if (outfile != nullptr) {
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= steplim) continue;
 
-			propagate_rk4(ray, r_max, dest, STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-			outfile->newline(2);
-		}
-	} else {
-		#pragma omp parallel for schedule(dynamic)
-		for (int ray = 0; ray < nRays; ray++)
-		{
-			if (show_progress != 0 && (ray % show_progress) == 0) {
-				#pragma omp critical
-				prog.show(ray + 1);
-			}
-			if (rays[ray].steps < 0) continue;
-			else if (rays[ray].steps >= STEPLIM) continue;
+            switch (method) {
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, dest, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                default: break;
+            }
+            outfile->newline(2);
+        }
+    } else {
+        #pragma omp parallel for schedule(dynamic)
+        for (int ray = 0; ray < nRays; ray++)
+        {
+            if (show_progress != 0 && (ray % show_progress) == 0) {
+                #pragma omp critical
+                prog.show(ray + 1);
+            }
+            if (rays[ray].steps < 0) continue;
+            else if (rays[ray].steps >= steplim) continue;
 
-			propagate_rk4(ray, r_max, dest, STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
-		}
-	}
+            switch (method) {
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, dest, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                default: break;
+            }
+        }
+    }
     prog.done();
 }
 
@@ -1224,42 +1206,6 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 // =============================================================================
 // RK45 / Dormand-Prince (DOPRI5) adaptive integrator
 // =============================================================================
-
-template <typename T>
-void Raytracer<T>::run_raytrace_rk45(T r_max, T theta_max, int show_progress, TextOutput* outfile,
-                                      int write_step, T write_rmax, T write_rmin, bool write_cartesian)
-{
-    cout << "Running raytracer (RK45/DOPRI5)..." << endl;
-
-    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
-    show_progress = abs(show_progress);
-
-    if (outfile != nullptr) {
-        for (int ray = 0; ray < nRays; ray++)
-        {
-            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
-            if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= RK45_STEPLIM) continue;
-
-            propagate_rk45(ray, r_max, theta_max, RK45_STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-            outfile->newline(2);
-        }
-    } else {
-        #pragma omp parallel for schedule(dynamic)
-        for (int ray = 0; ray < nRays; ray++)
-        {
-            if (show_progress != 0 && (ray % show_progress) == 0) {
-                #pragma omp critical
-                prog.show(ray + 1);
-            }
-            if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= RK45_STEPLIM) continue;
-
-            propagate_rk45(ray, r_max, theta_max, RK45_STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
-        }
-    }
-    prog.done();
-}
 
 template <typename T>
 inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim, const int steplim,
@@ -1587,43 +1533,6 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     if (rays[ray].status & RAY_STATUS_STEPLIM)
         rays[ray].steps = -rays[ray].steps;   // negative steps flags a stuck/failed ray
     return steps;
-}
-
-template <typename T>
-void Raytracer<T>::run_raytrace_rk45(T r_max, RayDestination<T>* dest, int show_progress,
-                                      TextOutput* outfile, int write_step,
-                                      T write_rmax, T write_rmin, bool write_cartesian)
-{
-    cout << "Running raytracer (RK45/DOPRI5)..." << endl;
-
-    ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
-    show_progress = abs(show_progress);
-
-    if (outfile != nullptr) {
-        for (int ray = 0; ray < nRays; ray++)
-        {
-            if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
-            if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= RK45_STEPLIM) continue;
-
-            propagate_rk45(ray, r_max, dest, RK45_STEPLIM, outfile, write_step, write_rmax, write_rmin, write_cartesian);
-            outfile->newline(2);
-        }
-    } else {
-        #pragma omp parallel for schedule(dynamic)
-        for (int ray = 0; ray < nRays; ray++)
-        {
-            if (show_progress != 0 && (ray % show_progress) == 0) {
-                #pragma omp critical
-                prog.show(ray + 1);
-            }
-            if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= RK45_STEPLIM) continue;
-
-            propagate_rk45(ray, r_max, dest, RK45_STEPLIM, nullptr, write_step, write_rmax, write_rmin, write_cartesian);
-        }
-    }
-    prog.done();
 }
 
 template <typename T>

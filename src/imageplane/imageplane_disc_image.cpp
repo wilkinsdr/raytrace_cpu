@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     //raytrace_source.set_max_tstep(max_tstep);
 
     raytrace_source.redshift_start();
-    raytrace_source.run_raytrace(1.1 * dist, M_PI_2);
+    raytrace_source.run_raytrace(Integrator::Euler, M_PI_2, 1.1 * dist);
     raytrace_source.redshift(-1);
     raytrace_source.range_phi();
     //raytrace_source.calculate_ray_angles(-1, true);

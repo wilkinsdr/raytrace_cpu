@@ -109,7 +109,7 @@ int main(int argc, char **argv)
                                        precision);
 
     raytrace_source.redshift_start();
-    raytrace_source.run_raytrace_rk4(1.1 * dist, &disc_dest);
+    raytrace_source.run_raytrace(&disc_dest, Integrator::RK4, 1.1 * dist);
     raytrace_source.redshift(&disc_dest);
     raytrace_source.range_phi();
 

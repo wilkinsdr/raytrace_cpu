@@ -2,8 +2,8 @@
 // emissivity_rd.cpp
 //
 // Version of emissivity.cpp that uses the RayDestination interface to define
-// the disc termination surface. Demonstrates how run_raytrace_rk4() can be
-// called with a custom stopping criterion instead of a fixed theta limit.
+// the disc termination surface. Demonstrates how run_raytrace() can be
+// called with a RayDestination stopping criterion instead of a fixed theta limit.
 //
 // Default behaviour (FlatDiscDestination, theta_lim = pi/2) is equivalent to
 // the original emissivity program.
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 	FlatDiscDestination<double> disc_dest(theta_lim);
 
 	raytrace_source.redshift_start();
-	raytrace_source.run_raytrace_rk4(r_max, &disc_dest, show_progress);
+	raytrace_source.run_raytrace(&disc_dest, Integrator::RK4, r_max, show_progress);
 	raytrace_source.range_phi();
 	raytrace_source.redshift(&disc_dest);
 

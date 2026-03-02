@@ -62,9 +62,9 @@ static long reduce(PointSource<double>& src,
 
     src.redshift_start();
     if (use_rk45)
-        src.run_raytrace_rk45(R_MAX, M_PI_2, SHOW_PROGRESS);
+        src.run_raytrace(Integrator::RK45, M_PI_2, R_MAX, SHOW_PROGRESS);
     else
-        src.run_raytrace_rk4(R_MAX, M_PI_2, SHOW_PROGRESS);
+        src.run_raytrace(Integrator::RK4,  M_PI_2, R_MAX, SHOW_PROGRESS);
     src.range_phi();
     src.redshift(-1.0, false, false, 0);
 

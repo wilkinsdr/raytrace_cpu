@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 	HealpixPointSource<double> raytrace_source(source, V, spin, order, motion, basis);
 
     raytrace_source.redshift_start(true);
-    raytrace_source.run_raytrace(rmax, M_PI_2, show_progress);
+    raytrace_source.run_raytrace(Integrator::Euler, M_PI_2, rmax, show_progress);
     raytrace_source.range_phi();
     raytrace_source.redshift(-1, true);
 

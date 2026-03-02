@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
 	RaytraceSource = new ImagePlane<double>(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, tol, plane_phi0);
 
-    RaytraceSource->run_raytrace(1.5 * dist, theta_max, &outfile, write_step, write_rmax, write_rmin, write_cartesian);
+    RaytraceSource->run_raytrace(Integrator::Euler, theta_max, 1.5 * dist, 0, &outfile, write_step, write_rmax, write_rmin, write_cartesian);
 
 	delete RaytraceSource;
 

@@ -53,3 +53,4 @@ cmake.local
 # python
 *.pyc
 __pycache__
+*.png
