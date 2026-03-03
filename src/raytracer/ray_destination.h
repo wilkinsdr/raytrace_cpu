@@ -34,10 +34,12 @@ class RayDestination {
 public:
     virtual ~RayDestination() = default;
     virtual bool reached(T r, T theta, T phi) const = 0;
-    // Direction-aware overload: thetadot_sign = +1 means theta is increasing (ray approaching
-    // the equatorial plane from above); -1 means decreasing (approaching from below).
-    // Default ignores direction and delegates to the positional overload.
-    virtual bool reached(T r, T theta, T phi, int thetadot_sign) const {
+    // Crossing-aware overload: prev_theta is theta from the previous step.
+    // Subclasses can override this to check for an actual crossing of a surface
+    // rather than just the current position.  The default delegates to the
+    // positional overload (ignoring prev_theta), which is correct for simple
+    // one-sided surfaces such as FlatDiscDestination.
+    virtual bool reached(T r, T theta, T phi, T prev_theta) const {
         return reached(r, theta, phi);
     }
     virtual T velocity(T r, T theta, T phi) const { return -1; }
@@ -79,36 +81,45 @@ public:
     }
 };
 
-// Like FlatDiscDestination but only triggers when r >= r_isco.
-// Rays that cross theta_lim inside the ISCO pass through without stopping, allowing them
-// to continue to the horizon.  Rays that have orbited the black hole and approach the
-// disc from below (thetadot_sign < 0) ARE accepted — these produce the photon ring image.
-// A ray inside the ISCO has no stable radial turning point and falls to the horizon, so
-// the r >= r_isco guard alone is sufficient to exclude spurious inside-ISCO crossings.
+// Like FlatDiscDestination but only triggers within the annular disc region r_isco <= r <= r_out.
+// Rays inside the ISCO pass through (continuing to the horizon).
+// Rays beyond r_out pass through — they may orbit and re-enter the annulus from the other side.
+//
+// The crossing-aware overload requires prev_theta (theta from the previous propagator step)
+// to correctly detect disc crossings regardless of approach direction.  A ray is stopped only
+// when theta has actually crossed theta_lim since the last step, catching both "from above"
+// (prev < theta_lim, current >= theta_lim) and "from below" (prev > theta_lim, current <=
+// theta_lim) crossings.  This avoids the ambiguity of thetadot_sign, which cannot distinguish
+// "ray has come from the southern hemisphere" from "ray in the northern hemisphere moving
+// away from the disc."
 template <typename T>
 class DiscWithISCODestination : public RayDestination<T> {
     T theta_lim;
     T r_isco;
+    T r_out;   // outer disc boundary; <= 0 means no outer limit
 public:
-    explicit DiscWithISCODestination(T r_isco, T theta_lim = M_PI_2)
-        : theta_lim(theta_lim), r_isco(r_isco) {}
+    explicit DiscWithISCODestination(T r_isco, T r_out = -1, T theta_lim = M_PI_2)
+        : theta_lim(theta_lim), r_isco(r_isco), r_out(r_out) {}
     bool reached(T r, T theta, T phi) const override {
         if (r < r_isco) return false;
+        if (r_out > 0 && r > r_out) return false;
         if (theta_lim > 0) return theta >= theta_lim;
         if (theta_lim < 0) return theta <= -theta_lim;
         return false;
     }
-    bool reached(T r, T theta, T phi, int thetadot_sign) const override {
+    bool reached(T r, T theta, T phi, T prev_theta) const override {
         if (r < r_isco) return false;
-        // Only stop on the correct approach direction: thetadot_sign > 0 means theta is
-        // increasing (approaching from above for theta_lim > 0); < 0 means from below.
-        if (theta_lim > 0 && thetadot_sign <= 0) return false;
-        if (theta_lim < 0 && thetadot_sign >= 0) return false;
-        if (theta_lim > 0) return theta >= theta_lim;
-        if (theta_lim < 0) return theta <= -theta_lim;
+        if (r_out > 0 && r > r_out) return false;
+        if (theta_lim > 0)
+            return (prev_theta < theta_lim && theta >= theta_lim) ||   // crossed from above
+                   (prev_theta > theta_lim && theta <= theta_lim);      // crossed from below
+        if (theta_lim < 0) {
+            const T tl = -theta_lim;
+            return (prev_theta > tl && theta <= tl) ||
+                   (prev_theta < tl && theta >= tl);
+        }
         return false;
     }
-
 };
 
 #endif /* RAY_DESTINATION_H_ */

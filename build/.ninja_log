@@ -20,3 +20,15 @@
 413	448	1772505551692984495	/Users/drw/data/raytrace_cpu/bin/imageplane_disc_image_isco	5649d6616216a450
 5	372	1772505988077562391	src/imageplane/CMakeFiles/imageplane_disc_image_isco.dir/imageplane_disc_image_isco.cpp.o	db8b0c4f400a3eb8
 372	407	1772505988444993642	/Users/drw/data/raytrace_cpu/bin/imageplane_disc_image_isco	5649d6616216a450
+5	362	1772508576757456118	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	f714ad25a53de6ee
+5	373	1772508576757682661	src/imageplane/CMakeFiles/imageplane_disc_image_isco.dir/imageplane_disc_image_isco.cpp.o	db8b0c4f400a3eb8
+362	406	1772508577114301972	/Users/drw/data/raytrace_cpu/obj/libraytracer.a	1cc4959d8af9e3e4
+406	438	1772508577158413632	/Users/drw/data/raytrace_cpu/bin/imageplane_disc_image_isco	5649d6616216a450
+10	387	1772510283213482734	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	f714ad25a53de6ee
+11	396	1772510283213849653	src/imageplane/CMakeFiles/imageplane_disc_image_isco.dir/imageplane_disc_image_isco.cpp.o	db8b0c4f400a3eb8
+387	430	1772510283590134574	/Users/drw/data/raytrace_cpu/obj/libraytracer.a	1cc4959d8af9e3e4
+430	466	1772510283633277678	/Users/drw/data/raytrace_cpu/bin/imageplane_disc_image_isco	5649d6616216a450
+5	372	1772511364331789250	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	f714ad25a53de6ee
+5	385	1772511364332369130	src/imageplane/CMakeFiles/imageplane_disc_image_isco.dir/imageplane_disc_image_isco.cpp.o	db8b0c4f400a3eb8
+372	417	1772511364699378900	/Users/drw/data/raytrace_cpu/obj/libraytracer.a	1cc4959d8af9e3e4
+417	450	1772511364743846589	/Users/drw/data/raytrace_cpu/bin/imageplane_disc_image_isco	5649d6616216a450

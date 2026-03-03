@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     double r_isco = kerr_isco<double>(spin, +1);
     cout << "ISCO at " << r_isco << endl;
 
-    DiscWithISCODestination<double> dest(r_isco);
+    DiscWithISCODestination<double> dest(r_isco, r_disc);
 
     ImagePlane<double> raytrace_source(dist, incl, x0, xmax, dx, y0, ymax, dy, spin, plane_phi0,
                                                 precision);
@@ -126,12 +126,12 @@ int main(int argc, char **argv)
 
     for(int ray = 0; ray < raytrace_source.get_count(); ray++)
     {
-        if(raytrace_source.rays[ray].steps > 0)
+        if(raytrace_source.rays[ray].steps > 0 && raytrace_source.rays[ray].status & RAY_STATUS_DEST)
         {
             double x, y, z;
             cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta,
                       raytrace_source.rays[ray].phi, spin);
-            if(z < 1E-2 && raytrace_source.rays[ray].r < r_disc &&
+            if(raytrace_source.rays[ray].r < r_disc &&
                raytrace_source.rays[ray].redshift > 0)
             {
                 double x = raytrace_source.rays[ray].alpha;

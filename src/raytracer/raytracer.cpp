@@ -1157,6 +1157,7 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		                        r + step*pr3, theta + step*ptheta3, phi, a);
 
 		// === RK4 weighted position update ===
+		const T theta_prev = theta;
 		t     += (step / 6) * (pt1     + 2*pt2     + 2*pt3     + pt4);
 		r     += (step / 6) * (pr1     + 2*pr2     + 2*pr3     + pr4);
 		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
@@ -1167,7 +1168,7 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 			rays[ray].status |= RAY_STATUS_HORIZON;
 			break;
 		}
-		if(dest->reached(r, theta, phi, thetadot_sign))
+		if(dest->reached(r, theta, phi, theta_prev))
 		{
 			rays[ray].status |= RAY_STATUS_DEST;
 			break;
@@ -1559,7 +1560,6 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
     // Identical to propagate_rk45(ray, rlim, thetalim, ...) except the polar-angle stopping
     // condition is replaced by a call to dest->reached(r, theta, phi) after each accepted step.
     //
-
     int steps = 0;
 
     bool r_was_positive     = false;  // only allow r sign flip after rdotsq has been positive
@@ -1687,6 +1687,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             if (step > step_max) step = step_max;
         }
 
+        const T theta_prev = theta;
         bool step_accepted = false;
         while (!step_accepted)
         {
@@ -1779,7 +1780,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             rays[ray].status |= RAY_STATUS_HORIZON;
             break;
         }
-        if (dest->reached(r, theta, phi, thetadot_sign))
+        if (dest->reached(r, theta, phi, theta_prev))
         {
             rays[ray].status |= RAY_STATUS_DEST;
             break;
