@@ -1670,8 +1670,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
         }
 
         // --- Cap the adaptive step to prevent intermediate DOPRI5 stages from crossing the
-        //     event horizon (same rationale as thetalim variant; theta cap intentionally
-        //     omitted to avoid trapping rays near polar-axis source geometries).
+        //     event horizon.  dest->step_limit() supplies an optional boundary-surface cap
+        //     (analogous to the thetalim clamp in propagate_rk45); destinations that cannot
+        //     define a meaningful limit return std::numeric_limits<T>::max() (no cap).
         {
             T step_max = abs((r - (T)horizon) / pr1) / precision;
             if (max_phistep > 0)
@@ -1697,6 +1698,10 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             {
                 h_try  = abs((rlim - r) / pr1);
                 clamped = true;
+            }
+            {
+                T h_dest = dest->step_limit(r, theta, phi, pr1, ptheta1, pphi1);
+                if (h_dest < h_try) { h_try = h_dest; clamped = true; }
             }
 
             // === k2-k6 ===
