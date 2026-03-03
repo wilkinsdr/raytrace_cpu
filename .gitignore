@@ -54,3 +54,5 @@ cmake.local
 *.pyc
 __pycache__
 *.png
+build/compile_commands.json
+build/build.ninja
