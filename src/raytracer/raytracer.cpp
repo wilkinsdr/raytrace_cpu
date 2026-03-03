@@ -395,7 +395,7 @@ void Raytracer<T>::redshift_start(T V, bool reverse, bool projradius )
                                 rays[ray].thetadot_sign, rays[ray].r, rays[ray].theta, rays[ray].phi, spin);
 
 		// if we're propagating backwards, reverse the direction of the photon momentum
-		if(reverse) p[1] *= -1; p[2] *= -1; p[3] *= -1;
+		if(reverse) { p[1] *= -1; p[2] *= -1; p[3] *= -1; }
 
 		// evaluate dot product to get energy
 		rays[ray].emit = 0;
@@ -473,14 +473,17 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 
 	T p[4];
 
+	// if propagating backwards (image plane), flip spin back to physical value
+	const T a = (reverse) ? -1*spin : spin;
+
 	// metric coefficients
-	const T rhosq = r*r + (spin*cos(theta))*(spin*cos(theta));
-	const T delta = r*r - 2*r + spin*spin;
-	const T sigmasq = (r*r + spin*spin)*(r*r + spin*spin) - spin*spin*delta*sin(theta)*sin(theta);
+	const T rhosq = r*r + (a*cos(theta))*(a*cos(theta));
+	const T delta = r*r - 2*r + a*a;
+	const T sigmasq = (r*r + a*a)*(r*r + a*a) - a*a*delta*sin(theta)*sin(theta);
 
 	const T e2nu = rhosq * delta / sigmasq;
 	const T e2psi = sigmasq * sin(theta)*sin(theta) / rhosq;
-	const T omega = 2*spin*r / sigmasq;
+	const T omega = 2*a*r / sigmasq;
 
 	T g[16];
 	for(int i=0; i<16; i++)
@@ -500,10 +503,10 @@ inline T Raytracer<T>::ray_redshift( T V, bool reverse, bool projradius, T r, T 
 	{
 		// if V==-1, calculate orbital velocity for a geodesic circular orbit in equatorial lane
 		if (V == -1 && projradius)
-			V = 1 / (spin +
+			V = 1 / (a +
 			         r * sin(theta) * sqrt(r * sin(theta)));    // project the radius parallel to the equatorial plane
 		else if (V == -1)
-			V = 1 / (spin + r * sqrt(r));
+			V = 1 / (a + r * sqrt(r));
 
 		// if(reverse) V = -1;
 
