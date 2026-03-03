@@ -99,12 +99,18 @@ void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
         }
     } else {
         // Parallel path: rays are fully independent, no file I/O
+        int rays_done = 0;
         #pragma omp parallel for schedule(dynamic)
         for (int ray = 0; ray < nRays; ray++)
         {
-            if (show_progress != 0 && (ray % show_progress) == 0) {
-                #pragma omp critical
-                prog.show(ray + 1);
+            if (show_progress != 0) {
+                int done;
+                #pragma omp atomic capture
+                done = ++rays_done;
+                if (done % show_progress == 0) {
+                    #pragma omp critical
+                    prog.show(done);
+                }
             }
             if (rays[ray].steps < 0) continue;
             else if (rays[ray].steps >= steplim) continue;
@@ -974,12 +980,18 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_
             outfile->newline(2);
         }
     } else {
+        int rays_done = 0;
         #pragma omp parallel for schedule(dynamic)
         for (int ray = 0; ray < nRays; ray++)
         {
-            if (show_progress != 0 && (ray % show_progress) == 0) {
-                #pragma omp critical
-                prog.show(ray + 1);
+            if (show_progress != 0) {
+                int done;
+                #pragma omp atomic capture
+                done = ++rays_done;
+                if (done % show_progress == 0) {
+                    #pragma omp critical
+                    prog.show(done);
+                }
             }
             if (rays[ray].steps < 0) continue;
             else if (rays[ray].steps >= steplim) continue;

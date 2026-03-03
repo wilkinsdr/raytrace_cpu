@@ -9,7 +9,7 @@
 
 template <typename T>
 ImagePlane<T>::ImagePlane( T dist, T inc, T x0, T xmax, T dx, T y0, T ymax, T dy, T spin, T phi, T precision )
-	: Raytracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , spin , precision ),
+	: Raytracer<T>( (((xmax - x0) / dx) + 1) * (((ymax - y0) / dy) + 1) , -1 * spin , precision ),
 	        Nx(((xmax - x0) / dx) + 1),
 	        Ny(((ymax - y0) / dy) + 1),
 	        D(dist),
