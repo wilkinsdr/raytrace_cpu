@@ -56,3 +56,8 @@ __pycache__
 *.png
 build/compile_commands.json
 build/build.ninja
+build/.ninja_deps
+build/.ninja_log
+build/build.ninja
+build/compile_commands.json
+build/.ninja_deps

@@ -1167,7 +1167,7 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 			rays[ray].status |= RAY_STATUS_HORIZON;
 			break;
 		}
-		if(dest->reached(r, theta, phi))
+		if(dest->reached(r, theta, phi, thetadot_sign))
 		{
 			rays[ray].status |= RAY_STATUS_DEST;
 			break;
@@ -1779,7 +1779,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             rays[ray].status |= RAY_STATUS_HORIZON;
             break;
         }
-        if (dest->reached(r, theta, phi))
+        if (dest->reached(r, theta, phi, thetadot_sign))
         {
             rays[ray].status |= RAY_STATUS_DEST;
             break;

@@ -34,6 +34,12 @@ class RayDestination {
 public:
     virtual ~RayDestination() = default;
     virtual bool reached(T r, T theta, T phi) const = 0;
+    // Direction-aware overload: thetadot_sign = +1 means theta is increasing (ray approaching
+    // the equatorial plane from above); -1 means decreasing (approaching from below).
+    // Default ignores direction and delegates to the positional overload.
+    virtual bool reached(T r, T theta, T phi, int thetadot_sign) const {
+        return reached(r, theta, phi);
+    }
     virtual T velocity(T r, T theta, T phi) const { return -1; }
     virtual void four_velocity(T r, T theta, T phi, T spin, T et[4]) const
     {
@@ -71,6 +77,38 @@ public:
         if (theta_lim < 0) return theta <= -theta_lim;
         return false;
     }
+};
+
+// Like FlatDiscDestination but only triggers when r >= r_isco.
+// Rays that cross theta_lim inside the ISCO pass through without stopping, allowing them
+// to continue to the horizon.  Rays that have orbited the black hole and approach the
+// disc from below (thetadot_sign < 0) ARE accepted — these produce the photon ring image.
+// A ray inside the ISCO has no stable radial turning point and falls to the horizon, so
+// the r >= r_isco guard alone is sufficient to exclude spurious inside-ISCO crossings.
+template <typename T>
+class DiscWithISCODestination : public RayDestination<T> {
+    T theta_lim;
+    T r_isco;
+public:
+    explicit DiscWithISCODestination(T r_isco, T theta_lim = M_PI_2)
+        : theta_lim(theta_lim), r_isco(r_isco) {}
+    bool reached(T r, T theta, T phi) const override {
+        if (r < r_isco) return false;
+        if (theta_lim > 0) return theta >= theta_lim;
+        if (theta_lim < 0) return theta <= -theta_lim;
+        return false;
+    }
+    bool reached(T r, T theta, T phi, int thetadot_sign) const override {
+        if (r < r_isco) return false;
+        // Only stop on the correct approach direction: thetadot_sign > 0 means theta is
+        // increasing (approaching from above for theta_lim > 0); < 0 means from below.
+        if (theta_lim > 0 && thetadot_sign <= 0) return false;
+        if (theta_lim < 0 && thetadot_sign >= 0) return false;
+        if (theta_lim > 0) return theta >= theta_lim;
+        if (theta_lim < 0) return theta <= -theta_lim;
+        return false;
+    }
+
 };
 
 #endif /* RAY_DESTINATION_H_ */
