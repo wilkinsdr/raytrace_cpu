@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     for(int ir=0; ir<Nr; ir++)
     {
         disc_r[ir] = (logbin_r) ? r_min * pow(dr, ir) : r_min + ir*dr;
-        disc_area[ir] = integrate_disc_area(disc_r[ir], (logbin_r) ? disc_r[ir]*dr : dr, spin);
+        disc_area[ir] = integrate_disc_area(disc_r[ir], (logbin_r) ? disc_r[ir]*dr : disc_r + dr, spin);
 
         disc_rays[ir] = 0;
         disc_flux[ir] = 0;
@@ -95,8 +95,8 @@ int main(int argc, char** argv)
 
 	for (int ray = 0; ray < raytrace_source.get_count(); ray++)
 	{
-		if (raytrace_source.rays[ray].steps > 0 && !(raytrace_source.rays[ray].status & RAY_STATUS_NEG_ENERGY))
-		//if (raytrace_source.rays[ray].steps > 0)
+		//if (raytrace_source.rays[ray].steps > 0 && !(raytrace_source.rays[ray].status & RAY_STATUS_NEG_ENERGY))
+		if (raytrace_source.rays[ray].steps > 0)
         {
 		    double x, y, z;
 		    cartesian(x, y, z, raytrace_source.rays[ray].r, raytrace_source.rays[ray].theta, raytrace_source.rays[ray].phi, spin);
