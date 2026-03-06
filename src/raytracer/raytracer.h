@@ -72,6 +72,8 @@ struct Ray
     int steps;
     int status;
     int rdot_sign, thetadot_sign;
+    int rdot_flips;           // number of radial turning points (sign flips of pr) encountered during propagation
+    int equatorial_crossings; // number of times theta crossed pi/2; image order for photon rings = equatorial_crossings - 1
     T alpha, beta;
 };
 
