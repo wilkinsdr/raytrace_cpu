@@ -32,6 +32,7 @@ cmake.local
 .DS_Store
 .wq
 .settings
+*.ninja*
 
 # dat output files
 *.fits
@@ -60,4 +61,5 @@ build/.ninja_deps
 build/.ninja_log
 build/build.ninja
 build/compile_commands.json
+build/.ninja_deps
 build/.ninja_deps
