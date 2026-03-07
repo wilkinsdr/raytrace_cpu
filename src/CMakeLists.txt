@@ -19,4 +19,7 @@ add_subdirectory (emissivity)
 include_directories("imageplane")
 add_subdirectory (imageplane)
 
+include_directories("caustic")
+add_subdirectory (caustic)
+
 add_subdirectory (tests)

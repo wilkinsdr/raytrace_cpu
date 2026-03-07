@@ -155,6 +155,9 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 	T pphi = rays[ray].pphi;
 	int rdot_sign = rays[ray].rdot_sign;
 	int thetadot_sign = rays[ray].thetadot_sign;
+	int rdot_flips = rays[ray].rdot_flips;
+	int equatorial_crossings = rays[ray].equatorial_crossings;
+	T theta_eq_prev = theta;
 
 	const T k = rays[ray].k;
 	const T h = rays[ray].h;
@@ -208,6 +211,7 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		{
 			rdot_sign *= -1;
 			r_was_positive = false;
+			rdot_flips++;
 		}
 		else if (rdotsq > 0)
 		{
@@ -270,7 +274,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		// calculate new position
 		t += pt*step;
 		r += pr*step;
-		theta += ptheta*step;
+		{ T tep = theta; theta += ptheta*step;
+		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi += pphi*step;
 
 		//aff += step;
@@ -320,6 +325,8 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
     rays[ray].pphi = pphi;
     rays[ray].rdot_sign = rdot_sign;
     rays[ray].thetadot_sign = thetadot_sign;
+    rays[ray].rdot_flips = rdot_flips;
+    rays[ray].equatorial_crossings = equatorial_crossings;
 
 	if(steps > 0) rays[ray].steps += steps;
 	if (rays[ray].status & RAY_STATUS_STEPLIM)
@@ -657,6 +664,8 @@ inline void Raytracer<T>::calculate_constants(int ray, T alpha, T beta, T V, T E
 
 	rays[ray].rdot_sign = (rdot >= 0) ? 1 : -1;
 	rays[ray].thetadot_sign = (thetadot > 0) ? 1 : -1;
+	rays[ray].rdot_flips = 0;
+	rays[ray].equatorial_crossings = 0;
 
 	//if(abs(rdot) < (1e-2 * e31)) rays[ray].steps = -1;
 //	if(abs(rays[ray].r*phidot/rdot) > 1e3) rays[ray].steps = -1;
@@ -772,6 +781,9 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 	T pphi = rays[ray].pphi;
 	int rdot_sign = rays[ray].rdot_sign;
 	int thetadot_sign = rays[ray].thetadot_sign;
+	int rdot_flips = rays[ray].rdot_flips;
+	int equatorial_crossings = rays[ray].equatorial_crossings;
+	T theta_eq_prev = theta;
 
 	const T k = rays[ray].k;
 	const T h = rays[ray].h;
@@ -823,6 +835,7 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		{
 			rdot_sign *= -1;
 			r_was_positive = false;
+			rdot_flips++;
 		}
 		else if (rdotsq > 0)
 		{
@@ -890,7 +903,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		// === RK4 weighted position update ===
 		t     += (step / 6) * (pt1     + 2*pt2     + 2*pt3     + pt4);
 		r     += (step / 6) * (pr1     + 2*pr2     + 2*pr3     + pr4);
-		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
+		{ T tep = theta; theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
+		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
 
 		if(r <= horizon)
@@ -938,6 +952,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
     rays[ray].pphi = pphi;
     rays[ray].rdot_sign = rdot_sign;
     rays[ray].thetadot_sign = thetadot_sign;
+    rays[ray].rdot_flips = rdot_flips;
+    rays[ray].equatorial_crossings = equatorial_crossings;
 
 	if(steps > 0) rays[ray].steps += steps;
 	if (rays[ray].status & RAY_STATUS_STEPLIM)
@@ -1042,6 +1058,9 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 	T pphi = rays[ray].pphi;
 	int rdot_sign = rays[ray].rdot_sign;
 	int thetadot_sign = rays[ray].thetadot_sign;
+	int rdot_flips = rays[ray].rdot_flips;
+	int equatorial_crossings = rays[ray].equatorial_crossings;
+	T theta_eq_prev = theta;
 
 	const T k = rays[ray].k;
 	const T h = rays[ray].h;
@@ -1093,6 +1112,7 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		{
 			rdot_sign *= -1;
 			r_was_positive = false;
+			rdot_flips++;
 		}
 		else if (rdotsq > 0)
 		{
@@ -1160,7 +1180,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		const T theta_prev = theta;
 		t     += (step / 6) * (pt1     + 2*pt2     + 2*pt3     + pt4);
 		r     += (step / 6) * (pr1     + 2*pr2     + 2*pr3     + pr4);
-		theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
+		{ T tep = theta; theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
+		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
 
 		if(r <= horizon)
@@ -1211,6 +1232,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
     rays[ray].pphi = pphi;
     rays[ray].rdot_sign = rdot_sign;
     rays[ray].thetadot_sign = thetadot_sign;
+    rays[ray].rdot_flips = rdot_flips;
+    rays[ray].equatorial_crossings = equatorial_crossings;
 
 	if(steps > 0) rays[ray].steps += steps;
 	if (rays[ray].status & RAY_STATUS_STEPLIM)
@@ -1265,6 +1288,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     T pphi   = rays[ray].pphi;
     int rdot_sign     = rays[ray].rdot_sign;
     int thetadot_sign = rays[ray].thetadot_sign;
+    int rdot_flips    = rays[ray].rdot_flips;
+    int equatorial_crossings = rays[ray].equatorial_crossings;
+    T theta_eq_prev = theta;
 
     const T k = rays[ray].k;
     const T h = rays[ray].h;   // z-angular momentum constant of motion
@@ -1352,6 +1378,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
             {
                 rdot_sign *= -1;
                 r_was_positive = false;
+                rdot_flips++;
             }
             else if (rdotsq > 0)
             {
@@ -1498,6 +1525,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
                 }
             }
         }  // end adaptive sub-loop
+        if ((theta_eq_prev < M_PI_2 && theta >= M_PI_2) || (theta_eq_prev > M_PI_2 && theta <= M_PI_2))
+            ++equatorial_crossings;
+        theta_eq_prev = theta;
 
         if (r <= horizon)
         {
@@ -1544,6 +1574,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
     rays[ray].pphi        = pphi;
     rays[ray].rdot_sign   = rdot_sign;
     rays[ray].thetadot_sign = thetadot_sign;
+    rays[ray].rdot_flips   = rdot_flips;
+    rays[ray].equatorial_crossings = equatorial_crossings;
 
     if (steps > 0) rays[ray].steps += steps;
     if (rays[ray].status & RAY_STATUS_STEPLIM)
@@ -1578,6 +1610,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
     T pphi   = rays[ray].pphi;
     int rdot_sign     = rays[ray].rdot_sign;
     int thetadot_sign = rays[ray].thetadot_sign;
+    int rdot_flips    = rays[ray].rdot_flips;
+    int equatorial_crossings = rays[ray].equatorial_crossings;
+    T theta_eq_prev = theta;
 
     const T k = rays[ray].k;
     const T h = rays[ray].h;
@@ -1650,6 +1685,7 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             {
                 rdot_sign *= -1;
                 r_was_positive = false;
+                rdot_flips++;
             }
             else if (rdotsq > 0)
             {
@@ -1670,8 +1706,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
         }
 
         // --- Cap the adaptive step to prevent intermediate DOPRI5 stages from crossing the
-        //     event horizon (same rationale as thetalim variant; theta cap intentionally
-        //     omitted to avoid trapping rays near polar-axis source geometries).
+        //     event horizon.  dest->step_limit() supplies an optional boundary-surface cap
+        //     (analogous to the thetalim clamp in propagate_rk45); destinations that cannot
+        //     define a meaningful limit return std::numeric_limits<T>::max() (no cap).
         {
             T step_max = abs((r - (T)horizon) / pr1) / precision;
             if (max_phistep > 0)
@@ -1697,6 +1734,10 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             {
                 h_try  = abs((rlim - r) / pr1);
                 clamped = true;
+            }
+            {
+                T h_dest = dest->step_limit(r, theta, phi, pr1, ptheta1, pphi1);
+                if (h_dest < h_try) { h_try = h_dest; clamped = true; }
             }
 
             // === k2-k6 ===
@@ -1774,6 +1815,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
                 }
             }
         }
+        if ((theta_eq_prev < M_PI_2 && theta >= M_PI_2) || (theta_eq_prev > M_PI_2 && theta <= M_PI_2))
+            ++equatorial_crossings;
+        theta_eq_prev = theta;
 
         if (r <= horizon)
         {
@@ -1823,6 +1867,8 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
     rays[ray].pphi        = pphi;
     rays[ray].rdot_sign   = rdot_sign;
     rays[ray].thetadot_sign = thetadot_sign;
+    rays[ray].rdot_flips   = rdot_flips;
+    rays[ray].equatorial_crossings = equatorial_crossings;
 
     if (steps > 0) rays[ray].steps += steps;
     if (rays[ray].status & RAY_STATUS_STEPLIM)

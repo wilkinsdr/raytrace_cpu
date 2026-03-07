@@ -4,21 +4,31 @@
  *  Pluggable ray termination criteria and disc velocity fields for the RK4 ray tracer.
  *
  *  Subclass RayDestination<T> and implement:
- *    reached()  — return true to stop propagation at the current position.
- *    velocity() — return the angular velocity Ω = dφ/dt of disc material at the
- *                 termination point, for use by redshift(dest*). Return -1 to fall
- *                 back to the Keplerian circular-orbit velocity (default).
+ *    reached()    — return true to stop propagation at the current position.
+ *    step_limit() — return an upper bound on the integrator step size to prevent
+ *                   overshooting the boundary surface.  Default: no limit.
+ *    velocity()   — return the angular velocity Ω = dφ/dt of disc material at the
+ *                   termination point, for use by redshift(dest*). Return -1 to fall
+ *                   back to the Keplerian circular-orbit velocity (default).
  */
 
 #ifndef RAY_DESTINATION_H_
 #define RAY_DESTINATION_H_
 
 #include <cmath>
+#include <limits>
 
 // Abstract base class — subclass this to define a custom ray termination surface
 // and an associated velocity field.
 //
 // reached() is called after every RK4 position update; return true to stop the ray.
+//
+// step_limit() returns an upper bound on the integrator step size (in affine parameter)
+// that prevents the adaptive RK45 integrator from overshooting the boundary surface in
+// a single step.  Given the current position (r,θ,φ) and first-stage momenta
+// (pr,pθ,pφ), return the step that would just reach the boundary under linear
+// extrapolation.  Return std::numeric_limits<T>::max() when no meaningful limit can be
+// defined for the current position or geometry (default).
 //
 // velocity() returns the scalar angular velocity Ω = dφ/dt of material at (r,θ,φ).
 // Return -1 for equatorial Keplerian (default). Used by four_velocity() default.
@@ -41,6 +51,9 @@ public:
     // one-sided surfaces such as FlatDiscDestination.
     virtual bool reached(T r, T theta, T phi, T prev_theta) const {
         return reached(r, theta, phi);
+    }
+    virtual T step_limit(T r, T theta, T phi, T pr, T ptheta, T pphi) const {
+        return std::numeric_limits<T>::max();
     }
     virtual T velocity(T r, T theta, T phi) const { return -1; }
     virtual void four_velocity(T r, T theta, T phi, T spin, T et[4]) const
@@ -78,6 +91,13 @@ public:
         if (theta_lim > 0) return theta >= theta_lim;
         if (theta_lim < 0) return theta <= -theta_lim;
         return false;
+    }
+    T step_limit(T r, T theta, T phi, T pr, T ptheta, T pphi) const override {
+        if (theta_lim > 0 && ptheta > 0 && theta < theta_lim)
+            return (theta_lim - theta) / ptheta;
+        if (theta_lim < 0 && ptheta < 0 && theta > -theta_lim)
+            return (-theta_lim - theta) / ptheta;
+        return std::numeric_limits<T>::max();
     }
 };
 
@@ -119,6 +139,15 @@ public:
                    (prev_theta < tl && theta >= tl);
         }
         return false;
+    }
+    T step_limit(T r, T theta, T phi, T pr, T ptheta, T pphi) const override {
+        if (r < r_isco) return std::numeric_limits<T>::max();
+        if (r_out > 0 && r > r_out) return std::numeric_limits<T>::max();
+        if (theta_lim > 0 && ptheta > 0 && theta < theta_lim)
+            return (theta_lim - theta) / ptheta;
+        if (theta_lim < 0 && ptheta < 0 && theta > -theta_lim)
+            return (-theta_lim - theta) / ptheta;
+        return std::numeric_limits<T>::max();
     }
 };
 
