@@ -63,7 +63,8 @@ Raytracer<T>::~Raytracer( )
 template <typename T>
 void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
                                 int show_progress, TextOutput* outfile,
-                                int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+                                int write_step, T write_rmax, T write_rmin, bool write_cartesian,
+                                int steplim)
 {
     //
     // Unified ray tracing entry point.  Selects the integration algorithm via the method argument:
@@ -76,7 +77,7 @@ void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
         "Running raytracer (RK4)...",
         "Running raytracer (RK45/DOPRI5)..."
     };
-    const int steplim = (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
+    const int effective_steplim = (steplim > 0) ? steplim : (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
     cout << names[static_cast<int>(method)] << endl;
 
     ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
@@ -88,12 +89,12 @@ void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
         {
             if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= steplim) continue;
+            else if (rays[ray].steps >= effective_steplim) continue;
 
             switch (method) {
-                case Integrator::Euler: propagate    (ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::Euler: propagate    (ray, r_max, theta_max, effective_steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, effective_steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, effective_steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
             }
             outfile->newline(2);
         }
@@ -113,12 +114,12 @@ void Raytracer<T>::run_raytrace(Integrator method, T theta_max, T r_max,
                 }
             }
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= steplim) continue;
+            else if (rays[ray].steps >= effective_steplim) continue;
 
             switch (method) {
-                case Integrator::Euler: propagate    (ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::Euler: propagate    (ray, r_max, theta_max, effective_steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, theta_max, effective_steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, theta_max, effective_steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
             }
         }
     }
@@ -277,6 +278,9 @@ inline int Raytracer<T>::propagate(int ray, const T rlim, const T thetalim, cons
 		{ T tep = theta; theta += ptheta*step;
 		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi += pphi*step;
+		// Reflect at polar axes: clamp theta to [0, pi]
+		if (theta < T(0))    { theta = -theta;                thetadot_sign = -thetadot_sign; phi += T(M_PI); }
+		if (theta > T(M_PI)) { theta = T(2)*T(M_PI) - theta; thetadot_sign = -thetadot_sign; phi += T(M_PI); }
 
 		//aff += step;
 
@@ -906,6 +910,9 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 		{ T tep = theta; theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
 		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
+		// Reflect at polar axes: clamp theta to [0, pi]
+		if (theta < T(0))    { theta = -theta;                thetadot_sign = -thetadot_sign; phi += T(M_PI); }
+		if (theta > T(M_PI)) { theta = T(2)*T(M_PI) - theta; thetadot_sign = -thetadot_sign; phi += T(M_PI); }
 
 		if(r <= horizon)
 		{
@@ -965,7 +972,8 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, const T thetalim, 
 template <typename T>
 void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_max,
                                 int show_progress, TextOutput* outfile,
-                                int write_step, T write_rmax, T write_rmin, bool write_cartesian)
+                                int write_step, T write_rmax, T write_rmin, bool write_cartesian,
+                                int steplim)
 {
     //
     // Unified ray tracing entry point with user-supplied stopping criterion.
@@ -978,7 +986,7 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_
         "Running raytracer (RK4)...",
         "Running raytracer (RK45/DOPRI5)..."
     };
-    const int steplim = (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
+    const int effective_steplim = (steplim > 0) ? steplim : (method == Integrator::RK45) ? RK45_STEPLIM : STEPLIM;
     cout << names[static_cast<int>(method)] << endl;
 
     ProgressBar prog(nRays, "Ray", 0, (show_progress > 0));
@@ -989,11 +997,11 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_
         {
             if (show_progress != 0 && (ray % show_progress) == 0) prog.show(ray + 1);
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= steplim) continue;
+            else if (rays[ray].steps >= effective_steplim) continue;
 
             switch (method) {
-                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK45: propagate_rk45(ray, r_max, dest, steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, effective_steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, dest, effective_steplim, outfile, write_step, write_rmax, write_rmin, write_cartesian); break;
                 default: break;
             }
             outfile->newline(2);
@@ -1013,11 +1021,11 @@ void Raytracer<T>::run_raytrace(RayDestination<T>* dest, Integrator method, T r_
                 }
             }
             if (rays[ray].steps < 0) continue;
-            else if (rays[ray].steps >= steplim) continue;
+            else if (rays[ray].steps >= effective_steplim) continue;
 
             switch (method) {
-                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
-                case Integrator::RK45: propagate_rk45(ray, r_max, dest, steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK4:  propagate_rk4 (ray, r_max, dest, effective_steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
+                case Integrator::RK45: propagate_rk45(ray, r_max, dest, effective_steplim, nullptr, write_step, write_rmax, write_rmin, write_cartesian); break;
                 default: break;
             }
         }
@@ -1183,6 +1191,9 @@ inline int Raytracer<T>::propagate_rk4(int ray, const T rlim, RayDestination<T>*
 		{ T tep = theta; theta += (step / 6) * (ptheta1 + 2*ptheta2 + 2*ptheta3 + ptheta4);
 		  if ((tep < M_PI_2 && theta >= M_PI_2) || (tep > M_PI_2 && theta <= M_PI_2)) ++equatorial_crossings; }
 		phi   += (step / 6) * (pphi1   + 2*pphi2   + 2*pphi3   + pphi4);
+		// Reflect at polar axes: clamp theta to [0, pi]
+		if (theta < T(0))    { theta = -theta;                thetadot_sign = -thetadot_sign; phi += T(M_PI); }
+		if (theta > T(M_PI)) { theta = T(2)*T(M_PI) - theta; thetadot_sign = -thetadot_sign; phi += T(M_PI); }
 
 		if(r <= horizon)
 		{
@@ -1483,6 +1494,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, const T thetalim,
             T theta_new = theta + h_try*(b1*ptheta1  + b3*ptheta3  + b4*ptheta4  + b5*ptheta5  + b6*ptheta6);
             T t_new     = t     + h_try*(b1*pt1     + b3*pt3     + b4*pt4     + b5*pt5     + b6*pt6);
             T phi_new   = phi   + h_try*(b1*pphi1   + b3*pphi3   + b4*pphi4   + b5*pphi5   + b6*pphi6);
+            // Reflect at polar axes: clamp theta_new to [0, pi]
+            if (theta_new < T(0))    { theta_new = -theta_new;                thetadot_sign = -thetadot_sign; phi_new += T(M_PI); }
+            if (theta_new > T(M_PI)) { theta_new = T(2)*T(M_PI) - theta_new; thetadot_sign = -thetadot_sign; phi_new += T(M_PI); }
 
             // === k7: FSAL evaluation at the 5th-order estimate (needed for error estimate) ===
             T pt7, pr7, ptheta7, pphi7;
@@ -1778,6 +1792,9 @@ inline int Raytracer<T>::propagate_rk45(int ray, const T rlim, RayDestination<T>
             T theta_new = theta + h_try*(b1*ptheta1  + b3*ptheta3  + b4*ptheta4  + b5*ptheta5  + b6*ptheta6);
             T t_new     = t     + h_try*(b1*pt1     + b3*pt3     + b4*pt4     + b5*pt5     + b6*pt6);
             T phi_new   = phi   + h_try*(b1*pphi1   + b3*pphi3   + b4*pphi4   + b5*pphi5   + b6*pphi6);
+            // Reflect at polar axes: clamp theta_new to [0, pi]
+            if (theta_new < T(0))    { theta_new = -theta_new;                thetadot_sign = -thetadot_sign; phi_new += T(M_PI); }
+            if (theta_new > T(M_PI)) { theta_new = T(2)*T(M_PI) - theta_new; thetadot_sign = -thetadot_sign; phi_new += T(M_PI); }
 
             // === k7 (FSAL) ===
             T pt7, pr7, ptheta7, pphi7;

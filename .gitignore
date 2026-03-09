@@ -4,6 +4,7 @@ obj
 lib
 dat
 par
+build
 
 # make sure we don't get the binaries in tests and util
 src/tests/*
@@ -63,3 +64,5 @@ build/build.ninja
 build/compile_commands.json
 build/.ninja_deps
 build/.ninja_deps
+build/.ninja_deps
+build/.ninja_log

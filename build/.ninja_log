@@ -1,8 +1,19 @@
 # ninja log v7
 1	368	1772464686897131409	src/raytracer/CMakeFiles/pointsource.dir/pointsource.cpp.o	15820653635992c
 2	431	1772464686897610453	src/emissivity/CMakeFiles/emissivity.dir/emissivity.cpp.o	f887cca0b0f5ce5a
-5	372	1772511364331789250	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	f714ad25a53de6ee
-5	349	1772498951328900236	src/raytracer/CMakeFiles/imageplane.dir/imageplane.cpp.o	d9772dbb92885cac
+11	506	1772995718119844315	src/raytracer/CMakeFiles/raytracer.dir/raytracer.cpp.o	f714ad25a53de6ee
+11	323	1772905908997982229	src/raytracer/CMakeFiles/imageplane.dir/imageplane.cpp.o	d9772dbb92885cac
 5	414	1772498951329048403	src/imageplane/CMakeFiles/imageplane_disc_image.dir/imageplane_disc_image.cpp.o	572eee4200c60202
-2	92	1772822061713157369	build.ninja	67af16fafe981d78
+7	96	1773011260625158732	build.ninja	67af16fafe981d78
 5	385	1772511364332369130	src/imageplane/CMakeFiles/imageplane_disc_image_isco.dir/imageplane_disc_image_isco.cpp.o	db8b0c4f400a3eb8
+4	283	1772905968871392307	src/caustic/CMakeFiles/caustic_sourceplane.dir/caustic_sourceplane.cpp.o	87b45716f22874a0
+324	372	1772905909310956300	/Users/drw/data/raytrace_cpu/obj/libimageplane.a	a4905ee6d42fdff9
+506	552	1772995718614768939	/Users/drw/data/raytrace_cpu/obj/libraytracer.a	1cc4959d8af9e3e4
+283	318	1772905969149932869	/Users/drw/data/raytrace_cpu/bin/caustic_sourceplane	4b91d736804f6d96
+11	586	1773009688457767725	src/caustic/CMakeFiles/caustic_plane.dir/caustic_plane.cpp.o	e53d90317804b150
+586	688	1773009689032676468	/Users/drw/data/raytrace_cpu/bin/caustic_plane	937394bb4f2fcf3b
+10	587	1773009688457071220	src/caustic/CMakeFiles/caustic_imageplane.dir/caustic_imageplane.cpp.o	3bf246826f049543
+587	688	1773009689033605183	/Users/drw/data/raytrace_cpu/bin/caustic_imageplane	223f74e18eda6de3
+9	116	1773011260625158732	build.ninja	67af16fafe981d78
+3	612	1773011260644442429	src/caustic/CMakeFiles/caustic_discplane.dir/caustic_discplane.cpp.o	c497b6688a009362
+612	706	1773011261253733847	/Users/drw/data/raytrace_cpu/bin/caustic_discplane	5a1f2d66cc3b7566

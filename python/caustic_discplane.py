@@ -1,7 +1,7 @@
 """
-caustic_imageplane.py
+caustic_discplane.py
 
-Plots the caustic / critical-curve analysis from caustic_imageplane.fits in a
+Plots the caustic / critical-curve analysis from caustic_discplane.fits in a
 single 3x3 figure:
 
   Row 1: image order map | det(J) | critical curves on sky
@@ -9,11 +9,11 @@ single 3x3 figure:
   Row 3: disc radius     | disc phi    | redshift
 
 Usage (from project root):
-  python python/caustic_imageplane.py [fits_file] [output_pdf]
+  python python/caustic_discplane.py [fits_file] [output_pdf]
 
 Defaults:
-  fits_file   = dat/caustic_imageplane.fits
-  output_pdf  = dat/caustic_imageplane_summary.pdf
+  fits_file   = dat/caustic_discplane.fits
+  output_pdf  = dat/caustic_discplane_summary.pdf
 """
 
 import sys
@@ -27,8 +27,8 @@ from matplotlib.patches import Patch
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-FITS_FILE = sys.argv[1] if len(sys.argv) > 1 else "dat/caustic_imageplane.fits"
-OUT_FILE  = sys.argv[2] if len(sys.argv) > 2 else "dat/caustic_imageplane_summary.pdf"
+FITS_FILE = sys.argv[1] if len(sys.argv) > 1 else "dat/caustic_discplane.fits"
+OUT_FILE  = sys.argv[2] if len(sys.argv) > 2 else "dat/caustic_discplane_summary.pdf"
 SENTINEL  = 1e30
 ZOOM_HALF = 8.0   # rg, for photon-ring zoom panels
 

@@ -1,16 +1,16 @@
-# caustic_imageplane.par
+# caustic_discplane.par
 #
 # Parameters for sky-plane critical curve mapping in Kerr spacetime.
 # Critical curves are the zero-contours of det(J) in the image plane;
 # they map to caustics on the accretion disc.
 #
-# Copy this file to par/caustic_imageplane.par and edit as needed.
+# Copy this file to par/caustic_discplane.par and edit as needed.
 # Run from the project root:
-#   ./bin/caustic_imageplane --parfile=par/caustic_imageplane.par
+#   ./bin/caustic_discplane --parfile=par/caustic_discplane.par
 #
 
 # Output FITS file (path relative to bin/ or use absolute path)
-outfile = ../dat/caustic_imageplane.fits
+outfile = ../dat/caustic_discplane.fits
 
 # Observer distance (gravitational radii).
 # Must be large enough that the image plane approximation is valid (>= 500 rg).
@@ -55,3 +55,11 @@ precision = 100
 
 # Show progress bar (1 = yes, 0 = no)
 show_progress = 1
+
+# Bundle Jacobian satellite offset as fraction of pixel spacing (default 0.01).
+# Each pixel traces 4 extra satellite rays at ±eps_x and ±eps_y, enabling much
+# more accurate local Jacobian derivatives than the grid-neighbour method, and
+# avoiding SENTINEL gaps near critical curves where grid neighbours land in
+# different image-order shells.
+# Set to 0 to fall back to the original grid-neighbour finite differences.
+bundle_eps_frac = 0.01
